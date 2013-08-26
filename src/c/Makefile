@@ -1,6 +1,15 @@
+UNAME = $(shell uname)
+ifeq ($(UNAME), Linux)
+	PLATFORM = linux
+endif
+ifeq ($(UNAME), Darwin)
+    PLATFORM = darwin
+endif
+
+TARGET = libpaxos.jnilib
+
 CC = gcc
-CFLAGS += -shared -fPIC -g -O2 -W -Wall -Wno-unused-parameter -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux 
-TARGET = libpaxos.so
+CFLAGS += -shared -fPIC -g -O2 -W -Wall -Wno-unused-parameter -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/$(PLATFORM)
 
 all: $(TARGET)
 

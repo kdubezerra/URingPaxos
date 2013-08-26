@@ -39,7 +39,7 @@
       <fileMode>0644</fileMode>
     </file> 
     <file>
-      <source>src/c/libpaxos.so</source>
+      <source>src/c/libpaxos.jnilib</source>
       <outputDirectory>/lib</outputDirectory>
 	  <fileMode>0755</fileMode>
     </file>
