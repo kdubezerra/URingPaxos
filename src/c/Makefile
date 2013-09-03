@@ -9,7 +9,7 @@ endif
 TARGET = libpaxos.jnilib
 
 CC = gcc
-CFLAGS += -shared -fPIC -g -O2 -W -Wall -Wno-unused-parameter -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/$(PLATFORM)
+CFLAGS += -shared -fPIC -g -O2 -W -Wall -Wno-unused-parameter -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/$(PLATFORM) -I/usr/java/jdk1.7.0_10/include/ -I/usr/java/jdk1.7.0_10/include/$(PLATFORM)
 
 all: $(TARGET)
 
