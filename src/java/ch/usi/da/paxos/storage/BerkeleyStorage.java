@@ -20,6 +20,7 @@ package ch.usi.da.paxos.storage;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Random;
 
 import org.apache.log4j.Logger;
 
@@ -75,46 +76,53 @@ public class BerkeleyStorage implements StableStorage {
 		this(null,false,true);
 	}
 	
-	public BerkeleyStorage(File file, boolean readonly, boolean async){
-		if(file == null){
-	        int pid = 0;
-	        try {
-				pid = Integer.parseInt((new File("/proc/self")).getCanonicalFile().getName());
-			} catch (NumberFormatException | IOException e) {
-			}        
-	        file = new File("/tmp/ringpaxos-db/" + pid);
-	        file.mkdirs();
-		}
-        EnvironmentConfig envConfig = new EnvironmentConfig();
-        DatabaseConfig dbConfig = new DatabaseConfig();
-        envConfig.setReadOnly(readonly);
-        dbConfig.setReadOnly(readonly);
-        envConfig.setAllowCreate(!readonly);
-        dbConfig.setAllowCreate(!readonly);
+   public BerkeleyStorage(File file, boolean readonly, boolean async) {
+      if (file == null) {
+         int pid = 0;
+         try {
+//            pid = Integer.parseInt((new File("/proc/self")).getCanonicalFile().getName());
+//            pid = Integer.parseInt(System.getProperty("pid"));
+            Random r = new Random();
+            r.setSeed(System.nanoTime());
+            pid = r.nextInt();
+         } catch (NumberFormatException /*| IOException*/ e) {
+            e.printStackTrace();
+            System.out.println("Failed to get process's id!");
+            System.exit(1);
+         }
+         file = new File("/tmp/ringpaxos-db/" + pid);
+         file.mkdirs();
+      }
+      EnvironmentConfig envConfig = new EnvironmentConfig();
+      DatabaseConfig dbConfig = new DatabaseConfig();
+      envConfig.setReadOnly(readonly);
+      dbConfig.setReadOnly(readonly);
+      envConfig.setAllowCreate(!readonly);
+      dbConfig.setAllowCreate(!readonly);
 
-        // performance settings
-    	envConfig.setTransactional(true);
-    	envConfig.setCacheMode(CacheMode.DEFAULT);
-    	//envConfig.setCacheSize(1000000*800); // 800M
-    	if(async){
-        	envConfig.setDurability(Durability.COMMIT_NO_SYNC);
-        	dbConfig.setDeferredWrite(true);
-        }else{
-        	envConfig.setDurability(Durability.COMMIT_SYNC);
-        	dbConfig.setDeferredWrite(false);        	
-        }
-        
-        env = new Environment(file, envConfig);
-        db = env.openDatabase(null,"paxosDB",dbConfig);
-        classCatalogDb = env.openDatabase(null,"ClassCatalogDB", dbConfig);
-        classCatalog = new StoredClassCatalog(classCatalogDb);
-        keyBinding = TupleBinding.getPrimitiveBinding(Integer.class);
-        dataBinding = new SerialBinding<Decision>(classCatalog,Decision.class);
+      // performance settings
+      envConfig.setTransactional(true);
+      envConfig.setCacheMode(CacheMode.DEFAULT);
+      // envConfig.setCacheSize(1000000*800); // 800M
+      if (async) {
+         envConfig.setDurability(Durability.COMMIT_NO_SYNC);
+         dbConfig.setDeferredWrite(true);
+      } else {
+         envConfig.setDurability(Durability.COMMIT_SYNC);
+         dbConfig.setDeferredWrite(false);
+      }
 
-        logger.info("BerkeleyStorage cache size: " + env.getMutableConfig().getCacheSize());
-        logger.info("BerkeleyStorage durability: " + env.getMutableConfig().getDurability().getLocalSync());
-        logger.info("BerkeleyStorage deferred write: " + db.getConfig().getDeferredWrite());
-	}
+      env = new Environment(file, envConfig);
+      db = env.openDatabase(null, "paxosDB", dbConfig);
+      classCatalogDb = env.openDatabase(null, "ClassCatalogDB", dbConfig);
+      classCatalog = new StoredClassCatalog(classCatalogDb);
+      keyBinding = TupleBinding.getPrimitiveBinding(Integer.class);
+      dataBinding = new SerialBinding<Decision>(classCatalog, Decision.class);
+
+      logger.info("BerkeleyStorage cache size: " + env.getMutableConfig().getCacheSize());
+      logger.info("BerkeleyStorage durability: " + env.getMutableConfig().getDurability().getLocalSync());
+      logger.info("BerkeleyStorage deferred write: " + db.getConfig().getDeferredWrite());
+   }
 	
 	@Override
 	public synchronized void put(Integer instance, Decision decision) {
