@@ -52,13 +52,13 @@
 	</category>
 		
 	<category name="ch.usi.da.paxos.message.Value" additivity="false">
-		<priority value="debug" />
+		<priority value="error" />
 		<appender-ref ref="VALUES-STDOUT" />
 		<!-- <appender-ref ref="VALUES-FILE" />  -->
 	</category>
 
 	<root>
-		<priority value="info" />
+		<priority value="error" />
 		<appender-ref ref="STDOUT" />
 		<!-- <appender-ref ref="FILE" /> -->
 	</root>
