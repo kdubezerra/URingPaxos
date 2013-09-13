@@ -31,6 +31,8 @@ import java.util.Random;
 
 import org.apache.log4j.Logger;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 
 import ch.usi.da.paxos.api.Learner;
@@ -108,8 +110,15 @@ public class Node implements PaxosNode {
 			Random rand = new Random();
 			int port = 2000 + rand.nextInt(1000); // assign port between 2000-3000
 			InetSocketAddress addr = new InetSocketAddress(ip,port);
-			// create ring manager
-			ZooKeeper zoo = new ZooKeeper(zoo_host,3000,null);
+
+			// creating dummy watcher
+			Watcher dummyWatcher = new Watcher() {
+			   @Override
+            public void process(WatchedEvent event) {               
+            }			   
+			};
+         // create ring manager
+			ZooKeeper zoo = new ZooKeeper(zoo_host, 3000, dummyWatcher);
 			
 			while (zoo.getState() != ZooKeeper.States.CONNECTED)
 			   Thread.sleep(100);
