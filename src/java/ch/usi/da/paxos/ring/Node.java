@@ -110,6 +110,10 @@ public class Node implements PaxosNode {
 			InetSocketAddress addr = new InetSocketAddress(ip,port);
 			// create ring manager
 			ZooKeeper zoo = new ZooKeeper(zoo_host,3000,null);
+			
+			while (zoo.getState() != ZooKeeper.States.CONNECTED)
+			   Thread.sleep(100);
+			
 			zoos.add(zoo);
 			RingManager rm = new RingManager(ring.getRingID(),ring.getNodeID(),addr,zoo,"/ringpaxos");
 			ring.setRingManager(rm);
