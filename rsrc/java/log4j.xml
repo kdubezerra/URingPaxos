@@ -52,7 +52,7 @@
 	</category>
 		
 	<category name="ch.usi.da.paxos.message.Value" additivity="false">
-		<priority value="error" />
+		<priority value="info" />
 		<appender-ref ref="VALUES-STDOUT" />
 		<!-- <appender-ref ref="VALUES-FILE" />  -->
 	</category>
