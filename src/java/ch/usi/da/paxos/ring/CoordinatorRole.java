@@ -62,7 +62,7 @@ public class CoordinatorRole extends Role {
 
 	private int reserved = 10000;
 	
-	private int resend_time = 2000;
+	private int resend_time = 20000;
 		
 	private volatile boolean fastmode = true; // True == Phase1Range
 	
