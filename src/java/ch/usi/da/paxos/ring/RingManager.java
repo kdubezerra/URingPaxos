@@ -179,13 +179,13 @@ public class RingManager implements Watcher {
 		if(zoo.exists(path + "/" + config_path,false) == null){
 			zoo.create(path + "/" + config_path,null,Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
 			zoo.create(path + "/" + config_path + "/" + ConfigKey.p1_preexecution_number,"5000".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
-			zoo.create(path + "/" + config_path + "/" + ConfigKey.p1_resend_time,"1000".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);	
+			zoo.create(path + "/" + config_path + "/" + ConfigKey.p1_resend_time,"60000".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);	
 			zoo.create(path + "/" + config_path + "/" + ConfigKey.concurrent_values,"20".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
 			zoo.create(path + "/" + config_path + "/" + ConfigKey.value_size,"32768".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
 			zoo.create(path + "/" + config_path + "/" + ConfigKey.value_count,"900000".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
 //			zoo.create(path + "/" + config_path + "/" + ConfigKey.value_resend_time,"3000".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
 			// TODO: fix value_resend_time?
-			zoo.create(path + "/" + config_path + "/" + ConfigKey.value_resend_time,"30000".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
+			zoo.create(path + "/" + config_path + "/" + ConfigKey.value_resend_time,"60000".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
 			zoo.create(path + "/" + config_path + "/" + ConfigKey.quorum_size,"2".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
 			zoo.create(path + "/" + config_path + "/" + ConfigKey.stable_storage,"ch.usi.da.paxos.storage.SyncBerkeleyStorage".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
 			zoo.create(path + "/" + config_path + "/" + ConfigKey.tcp_nodelay,"0".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
