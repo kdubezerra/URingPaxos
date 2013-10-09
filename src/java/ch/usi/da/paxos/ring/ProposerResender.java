@@ -43,7 +43,7 @@ public class ProposerResender implements Runnable {
 	
 	private final ProposerRole proposer;
 	
-	private int resend_time = 3000;
+	private int resend_time = 600000;
 	
 	/**
 	 * @param proposer
