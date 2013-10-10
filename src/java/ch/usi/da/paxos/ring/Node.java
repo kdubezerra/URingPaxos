@@ -108,6 +108,7 @@ public class Node implements PaxosNode {
 		for(RingDescription ring : rings){
 			// ring socket port
 			Random rand = new Random();
+			rand.setSeed(System.nanoTime());
 			int port = 2000 + rand.nextInt(1000); // assign port between 2000-3000
 			InetSocketAddress addr = new InetSocketAddress(ip,port);
 
