@@ -178,6 +178,7 @@ public class BerkeleyStorage implements StableStorage {
 					return false;
 				}
 			}
+			put(-1,new Decision(0,instance,0,null));
 		}finally{
 			cursor.close();
 		}
@@ -185,6 +186,11 @@ public class BerkeleyStorage implements StableStorage {
 		return true;
 	}
 
+	@Override
+	public synchronized Integer getLastTrimInstance() {
+		return get(-1).getInstance();
+	}
+	
 	@Override
 	public synchronized void close() {
 		try {

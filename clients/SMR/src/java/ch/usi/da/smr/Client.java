@@ -56,7 +56,7 @@ public class Client implements Receiver {
 
 	private final PartitionManager partitions;
 	
-	private final int clientID;
+	private final Map<Integer,Integer> connectMap;
 			
 	private final UDPListener udp;
 	
@@ -66,9 +66,9 @@ public class Client implements Receiver {
 	
 	private final int port;
 	
-	public Client(PartitionManager partitions,int clientID) throws IOException {
+	public Client(PartitionManager partitions,Map<Integer,Integer> connectMap) throws IOException {
 		this.partitions = partitions;
-		this.clientID = clientID;
+		this.connectMap = connectMap;
 		ip = getHostAddress(false);
 		port = 3000 + new Random().nextInt(1000);
 		udp = new UDPListener(port);
@@ -108,13 +108,18 @@ public class Client implements Receiver {
 		    		Message m = new Message(id,ip.getHostAddress() + ":" + port,cmds);
 			    	int ret = 0;
 			    	if(cmds.get(0).getType() == CommandType.GETRANGE){
-			    		ret = partitions.getABSender(null,clientID).abroadcast(m);
+			    		ABSender sender = partitions.getABSender(null,connectMap.get(partitions.getGlobalRing()));
+			    		if(sender == null){ cmds.clear(); break; };
+			    		ret = sender.abroadcast(m);
 			    	}else{
 			    		Partition p = partitions.getPartition(Integer.valueOf(cmds.get(0).getKey()));
-			    		ret = partitions.getABSender(p,clientID).abroadcast(m);
+			    		if(p == null){ System.err.println("No partition found for key " + cmds.get(0).getKey()); cmds.clear(); continue; };
+			    		ABSender sender = partitions.getABSender(p,connectMap.get(p.getRing()));
+			    		if(sender == null){ cmds.clear(); continue; };
+			    		ret = sender.abroadcast(m);
 			    	}
 			    	if(ret > 0){ // is abroadcasted
-			    		Message response = r.getResponse(5000); // wait response
+			    		Message response = r.getResponse(10000); // wait response
 			    		if(response != null){
 			    			for(Command c : response.getCommands()){
 				    			if(c.getType() == CommandType.RESPONSE){
@@ -164,14 +169,14 @@ public class Client implements Receiver {
 			zoo_host = args[1];
 		}
 		if (args.length < 1) {
-			System.err.println("Plese use \"Client\" \"client ID\"");
+			System.err.println("Plese use \"Client\" \"ring ID,node ID[;ring ID,node ID]\"");
 		} else {
-			final int clientID = Integer.parseInt(args[0]);
+			final Map<Integer,Integer> connectMap = parseArg(args[0]);
 			try {
 				final ZooKeeper zoo = new ZooKeeper(zoo_host,3000,null);
 				final PartitionManager partitions = new PartitionManager(zoo);
 				partitions.init();
-				final Client client = new Client(partitions,clientID);
+				final Client client = new Client(partitions,connectMap);
 				Runtime.getRuntime().addShutdownHook(new Thread(){
 					@Override
 					public void run(){
@@ -188,6 +193,14 @@ public class Client implements Receiver {
 				System.exit(1);
 			}
 		}
+	}
+
+	private static Map<Integer, Integer> parseArg(String arg) {
+		Map<Integer,Integer> connectMap = new HashMap<Integer,Integer>();
+		for(String s : arg.split(";")){
+			connectMap.put(Integer.valueOf(s.split(",")[0]),Integer.valueOf(s.split(",")[1]));
+		}
+		return connectMap;
 	}
 
 	/**
