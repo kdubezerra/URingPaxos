@@ -153,7 +153,12 @@ public class RingManager implements Watcher {
 			if(s.length() > 0){
 				p = p + "/" + s;
 				if(zoo.exists(p,false) == null){
-					zoo.create(p,null,Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
+				   try {
+				      zoo.create(p,null,Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
+				   }
+				   catch (KeeperException.NodeExistsException e) {
+				      System.out.println("Zookeeper node " + p + " already exists. Proceeding to next sublevel.");
+				   }
 				}
 			}
 		}
