@@ -25,6 +25,7 @@ import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TransferQueue;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.log4j.Logger;
 
@@ -49,7 +50,7 @@ public class CoordinatorRole extends Role {
 
 	private final RingManager ring;
 	
-	private final AtomicInteger instance = new AtomicInteger();
+	private final AtomicLong instance = new AtomicLong();
 
 	private final TransferQueue<Promise> promises = new LinkedTransferQueue<Promise>();
 	
@@ -57,7 +58,7 @@ public class CoordinatorRole extends Role {
 
 	private final Map<Integer,Promise> phase1range_in_transit = new ConcurrentHashMap<Integer,Promise>();
 
-	private int reserved = 10000;
+	private long reserved = 10000;
 	
 	private int resend_time = 600000;
 		
@@ -77,7 +78,7 @@ public class CoordinatorRole extends Role {
 
 	public int multi_ring_delta_t = 100;
 	
-	public int value_count = 0;
+	public long value_count = 0;
 	
 	/**
 	 * @param ring
@@ -140,7 +141,7 @@ public class CoordinatorRole extends Role {
 				if(fastmode){ // Phase1Range
 					while(promises.size() < (reserved/2) && phase1range_in_transit.isEmpty()){
 						final int ballot = 10+ring.getNodeID();
-						Value v = new Value("",NetworkManager.intToByte(reserved));
+						Value v = new Value("",NetworkManager.longToByte(reserved));
 						Message m = new Message(instance.incrementAndGet(),ring.getNodeID(),PaxosRole.Acceptor,MessageType.Phase1Range, ballot, v);
 						instance.addAndGet(reserved-1);
 						phase1range_in_transit.put(m.getInstance(),new Promise(m.getInstance(),m.getBallot()));

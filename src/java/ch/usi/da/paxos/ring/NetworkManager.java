@@ -392,7 +392,24 @@ public class NetworkManager {
 	            (byte)(value >>> 8),
 	            (byte)value};
 	}
-	
+   
+   /**
+    * @param value
+    * @return a byte[]
+    */
+   public static synchronized final byte[] longToByte(long value) {
+       return new byte[] {
+             (byte)(value >>> 56),
+             (byte)(value >>> 48),
+             (byte)(value >>> 40),
+             (byte)(value >>> 32),
+             (byte)(value >>> 24),
+             (byte)(value >>> 16),
+             (byte)(value >>> 8),
+             (byte)value
+             };
+   }
+   
 	/**
 	 * @param b
 	 * @return the int
@@ -400,4 +417,19 @@ public class NetworkManager {
 	public static synchronized final int byteToInt(byte [] b) { 
 		return (b[0] << 24) + ((b[1] & 0xFF) << 16) + ((b[2] & 0xFF) << 8) + (b[3] & 0xFF); 
 	}
+   
+   /**
+    * @param b
+    * @return the int
+    */
+   public static synchronized final int byteToLong(byte [] b) { 
+      return  ( b[0]         << 56)
+            + ((b[1] & 0xFF) << 48)
+            + ((b[2] & 0xFF) << 40)
+            + ((b[3] & 0xFF) << 32)
+            + ((b[4] & 0xFF) << 24)
+            + ((b[5] & 0xFF) << 16)
+            + ((b[6] & 0xFF) << 8 )
+            + ( b[7] & 0xFF       ); 
+   }
 }

@@ -43,7 +43,7 @@ public class InstanceSkipper implements Runnable {
 	
 	private final RingManager ring;
 	
-	private long last_time = System.nanoTime();
+	private long boot_time = 1381954123380L; // timeMillis at 10/16/2013 around 8 PM UTC
 	
 	private long last_value_count = 0;
 		
@@ -57,13 +57,14 @@ public class InstanceSkipper implements Runnable {
 		if(coordinator.multi_ring_lambda>0){
 		while(true){
 				try {
-					long time = System.nanoTime();
-					long value_count = coordinator.value_count - last_value_count;
-					float t = (float)(time-last_time)/(1000*1000*1000);
-					int skip = (int)(coordinator.multi_ring_lambda-((float)value_count/t));
-					if(skip > 0) {
+					long time = System.currentTimeMillis();
+					long value_count = coordinator.value_count;
+					double executionTime = ((double)(time-boot_time)) / 1000.0D;
+					long expectedValues = (long) (((long) coordinator.multi_ring_lambda) * executionTime);					
+					long skipsToSend = expectedValues - value_count;
+					if(skipsToSend > 0) {
 						if(logger.isDebugEnabled()){
-							logger.debug(String.format("skip %d values (%.1f/s)",skip,value_count/t));
+							logger.debug(String.format("skip %l values", skipsToSend));
 						}
 						Promise p = null;
 						try {
@@ -72,8 +73,8 @@ public class InstanceSkipper implements Runnable {
 						}
 						//send Phase2 with skip value
 						if(p != null){
-							Value v = new Value(Value.skipID,NetworkManager.intToByte(skip));
-							coordinator.value_count = coordinator.value_count + skip;
+							Value v = new Value(Value.skipID,NetworkManager.longToByte(skipsToSend));
+							coordinator.value_count = coordinator.value_count + skipsToSend;
 							Message m = new Message(p.getInstance(),ring.getNodeID(),PaxosRole.Acceptor,MessageType.Phase2,p.getBallot(),v);
 							if(ring.getNetwork().getLearner() != null){
 								ring.getNetwork().getLearner().deliver(ring,m);
@@ -87,7 +88,7 @@ public class InstanceSkipper implements Runnable {
 					}
 					
 					last_value_count = last_value_count + value_count;
-					last_time = time;
+					boot_time = time;
 					Thread.sleep(coordinator.multi_ring_delta_t);
 				} catch (InterruptedException e) {
 					Thread.currentThread().interrupt();
