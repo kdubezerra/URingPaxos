@@ -58,10 +58,10 @@ public class InstanceSkipper implements Runnable {
 		while(true){
 				try {
 					long time = System.currentTimeMillis();
-					long value_count = coordinator.value_count;
-					double executionTime = ((double)(time-boot_time)) / 1000.0D;
-					long expectedValues = (long) (((long) coordinator.multi_ring_lambda) * executionTime);					
-					long skipsToSend = expectedValues - value_count;
+					int value_count = coordinator.value_count;
+					float executionTime = ((float)(time-boot_time)) / 1000.0f;
+					int expectedValues = (int) ((coordinator.multi_ring_lambda) * executionTime);					
+					int skipsToSend = expectedValues - value_count;
 					if(skipsToSend > 0) {
 						if(logger.isDebugEnabled()){
 							logger.debug(String.format("skip %l values", skipsToSend));
@@ -73,7 +73,7 @@ public class InstanceSkipper implements Runnable {
 						}
 						//send Phase2 with skip value
 						if(p != null){
-							Value v = new Value(Value.skipID,NetworkManager.longToByte(skipsToSend));
+							Value v = new Value(Value.skipID,NetworkManager.intToByte(skipsToSend));
 							coordinator.value_count = coordinator.value_count + skipsToSend;
 							Message m = new Message(p.getInstance(),ring.getNodeID(),PaxosRole.Acceptor,MessageType.Phase2,p.getBallot(),v);
 							if(ring.getNetwork().getLearner() != null){
