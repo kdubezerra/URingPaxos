@@ -29,8 +29,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Semaphore;
 
 import org.apache.log4j.Logger;
+import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
@@ -99,6 +101,8 @@ public class RingManager implements Watcher {
 		
 	private int quorum = 2; // default value
 	
+	public long boot_time = 1381954123380L;
+	
 	/**
 	 * @param ringID
 	 * @param nodeID
@@ -162,9 +166,41 @@ public class RingManager implements Watcher {
 				}
 			}
 		}
+		
+		// create boottime
+		String boot_timePath = prefix + "/boot_time.bin";
+		if (zoo.exists(boot_timePath, false) == null) {
+		   byte[] local_boot = new Long(System.currentTimeMillis() - 300000L).toString().getBytes(); // current time - 5 min. to avoid problems
+         try {
+            zoo.create(boot_timePath,local_boot,Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
+         }
+         catch (KeeperException.NodeExistsException e) {
+            System.out.println("Zookeeper node " + boot_timePath + " already exists. Boot time already set by someone.");
+         }		   
+		}
+		else {
+		   System.out.println("Zookeeper node " + boot_timePath + " already exists. Boot time already set by someone.");
+		}
+		
+		Semaphore sem = new Semaphore(0);		
+		AsyncCallback.VoidCallback syncCallBack = new AsyncCallback.VoidCallback() {
+         public void processResult(int rc, String path, Object ctx) {
+            Semaphore sem = (Semaphore) ctx;
+            sem.release();
+         }
+      };		
+		zoo.sync(boot_timePath, syncCallBack, sem);
+		sem.acquire();
+
+		System.out.println("boot_time path sucessfully synchronized.");
+		
+		byte[] boot_time_zk = zoo.getData(boot_timePath, false, null);
+		boot_time = Long.parseLong(new String(boot_time_zk));		
+				
+		System.out.println("boot_time sucessfully set to " + boot_time);
 
 		// register and watch ring ID
-		if(zoo.exists(prefix + "/" + rid_path,false) == null){
+		if(zoo.exists(prefix + "/" + rid_path,false) == null) {
 			zoo.create(prefix + "/" + rid_path,null,Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
 		}
 		List<String> l = zoo.getChildren(prefix + "/" + rid_path, true);

@@ -50,6 +50,7 @@ public class InstanceSkipper implements Runnable {
 	public InstanceSkipper(RingManager ring,CoordinatorRole coordinator) {
 		this.coordinator = coordinator;
 		this.ring = ring;
+		this.boot_time = coordinator.boot_time;
 	}
 	
 	@Override
@@ -57,6 +58,7 @@ public class InstanceSkipper implements Runnable {
 		if(coordinator.multi_ring_lambda>0){
 		while(true){
 				try {
+//				   System.out.println("InstanceSkipper.boot_time = " + boot_time);
 					long time = System.currentTimeMillis();
 					int value_count = coordinator.value_count;
 					float executionTime = ((float)(time-boot_time)) / 1000.0f;
@@ -88,7 +90,6 @@ public class InstanceSkipper implements Runnable {
 					}
 					
 					last_value_count = last_value_count + value_count;
-					boot_time = time;
 					Thread.sleep(coordinator.multi_ring_delta_t);
 				} catch (InterruptedException e) {
 					Thread.currentThread().interrupt();
