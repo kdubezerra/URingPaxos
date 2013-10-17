@@ -187,37 +187,37 @@ public class RingManager implements Watcher {
 			}
 		}
 		
-		// create boottime
-		String boot_timePath = prefix + "/boot_time.bin";
-		if (zoo.exists(boot_timePath, false) == null) {
-		   byte[] local_boot = new Long(System.currentTimeMillis() - 300000L).toString().getBytes(); // current time - 5 min. to avoid problems
-         try {
-            zoo.create(boot_timePath,local_boot,Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
-         }
-         catch (KeeperException.NodeExistsException e) {
-            System.out.println("Zookeeper node " + boot_timePath + " already exists. Boot time already set by someone.");
-         }		   
-		}
-		else {
-		   System.out.println("Zookeeper node " + boot_timePath + " already exists. Boot time already set by someone.");
-		}
-		
-		Semaphore sem = new Semaphore(0);		
-		AsyncCallback.VoidCallback syncCallBack = new AsyncCallback.VoidCallback() {
-         public void processResult(int rc, String path, Object ctx) {
-            Semaphore sem = (Semaphore) ctx;
-            sem.release();
-         }
-      };		
-		zoo.sync(boot_timePath, syncCallBack, sem);
-		sem.acquire();
-
-		System.out.println("boot_time path sucessfully synchronized.");
-		
-		byte[] boot_time_zk = zoo.getData(boot_timePath, false, null);
-		boot_time = Long.parseLong(new String(boot_time_zk));		
-				
-		System.out.println("boot_time sucessfully set to " + boot_time);
+//		// create boottime
+//		String boot_timePath = prefix + "/boot_time.bin";
+//		if (zoo.exists(boot_timePath, false) == null) {
+//		   byte[] local_boot = new Long(System.currentTimeMillis() - 300000L).toString().getBytes(); // current time - 5 min. to avoid problems
+//         try {
+//            zoo.create(boot_timePath,local_boot,Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
+//         }
+//         catch (KeeperException.NodeExistsException e) {
+//            System.out.println("Zookeeper node " + boot_timePath + " already exists. Boot time already set by someone.");
+//         }		   
+//		}
+//		else {
+//		   System.out.println("Zookeeper node " + boot_timePath + " already exists. Boot time already set by someone.");
+//		}
+//		
+//		Semaphore sem = new Semaphore(0);		
+//		AsyncCallback.VoidCallback syncCallBack = new AsyncCallback.VoidCallback() {
+//         public void processResult(int rc, String path, Object ctx) {
+//            Semaphore sem = (Semaphore) ctx;
+//            sem.release();
+//         }
+//      };		
+//		zoo.sync(boot_timePath, syncCallBack, sem);
+//		sem.acquire();
+//
+//		System.out.println("boot_time path sucessfully synchronized.");
+//		
+//		byte[] boot_time_zk = zoo.getData(boot_timePath, false, null);
+//		boot_time = Long.parseLong(new String(boot_time_zk));		
+//				
+//		System.out.println("boot_time sucessfully set to " + boot_time);
 
 		// register and watch ring ID
 		if(zoo.exists(prefix + "/" + rid_path,false) == null) {
@@ -325,6 +325,31 @@ public class RingManager implements Watcher {
 			currentConnection = saddr;
 		}
 	}
+	
+	private void setBootTime(ZooKeeper zoo) {
+      String boot_timePath = prefix + "/boot_time.bin";
+      try {
+         byte[] local_boot = new Long(System.currentTimeMillis() - 60000L).toString().getBytes();
+         zoo.create(boot_timePath, local_boot, Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+      } catch (KeeperException.NodeExistsException e) {
+//         e.printStackTrace();
+         System.out.println("Zookeeper node " + boot_timePath + " already exists. Boot time already set by someone.");
+      } catch (InterruptedException | KeeperException e) {
+         e.printStackTrace();
+         System.exit(1);
+      }
+
+      byte[] boot_time_zk = null;
+      try {
+         boot_time_zk = zoo.getData(boot_timePath, false, null);
+      } catch (KeeperException | InterruptedException e) {
+         e.printStackTrace();
+         System.exit(1);
+      }
+      boot_time = Long.parseLong(new String(boot_time_zk));
+
+      System.out.println("boot_time sucessfully set to " + boot_time);
+   }
 	
 	private void notifyNewCoordinator(){
 		logger.info("RingManger this node is the new coordinator for ring " + ringID + "!");
@@ -501,7 +526,8 @@ public class RingManager implements Watcher {
 					last_acceptor = max;
 					coordinator = min;
 					if(nodeID == min && old_coordinator != coordinator){
-						notifyNewCoordinator();
+					   setBootTime(zoo);
+					   notifyNewCoordinator();
 					}
 				}else if(event.getPath().startsWith(prefix + "/" + rid_path)){
 					allrings.clear();
