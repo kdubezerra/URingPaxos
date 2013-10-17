@@ -62,13 +62,7 @@ public class SyncBerkeleyStorage implements StableStorage {
 	}
 
 	@Override
-	public Integer getLastTrimInstance() {
-		return storage.getLastTrimInstance();
-	}
-	
-	@Override
 	public void close() {
 		storage.close();
 	}
-
 }

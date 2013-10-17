@@ -103,6 +103,26 @@ public class RingManager implements Watcher {
 	
 	public long boot_time = 1381954123380L;
 	
+	private boolean checkThenCreate(String path, byte[] data) {
+	   try {
+	      zoo.create(path, data, Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+	   }
+	   catch (KeeperException.NodeExistsException e) {
+	      return false;
+	   }
+	   catch (InterruptedException | KeeperException e) {
+	      if (e instanceof KeeperException.NodeExistsException) {
+	         System.err.println("didn't catch KeeperException.NodeExistsException in the right place!");
+	         System.err.println("exiting.");
+	         System.exit(1);
+	      }
+	      e.printStackTrace();
+	      logger.error(" !!! error when calling checkThenCreate(" + path + ", " + data.toString() + ")");
+	      System.exit(1);
+	   }
+	   return true;
+	}
+	
 	/**
 	 * @param ringID
 	 * @param nodeID
@@ -235,7 +255,6 @@ public class RingManager implements Watcher {
 			zoo.create(path + "/" + config_path + "/" + ConfigKey.learner_recovery,"1".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
 			zoo.create(path + "/" + config_path + "/" + ConfigKey.trim_modulo,"0".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
 			zoo.create(path + "/" + config_path + "/" + ConfigKey.trim_quorum,"2".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
-			zoo.create(path + "/" + config_path + "/" + ConfigKey.auto_trim,"0".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
 		}
 		l = zoo.getChildren(path + "/" + config_path,false);
 		for(String k : l){
@@ -250,7 +269,6 @@ public class RingManager implements Watcher {
 			zoo.create(prefix + "/" + config_path + "/" + ConfigKey.multi_ring_m,"1".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
 			zoo.create(prefix + "/" + config_path + "/" + ConfigKey.multi_ring_lambda,"9000".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
 			zoo.create(prefix + "/" + config_path + "/" + ConfigKey.multi_ring_delta_t,"100".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
-			zoo.create(prefix + "/" + config_path + "/" + ConfigKey.deliver_skip_messages,"0".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
 		}
 		l = zoo.getChildren(prefix + "/" + config_path,false);
 		for(String k : l){

@@ -83,13 +83,8 @@ public class MemcachedStorage implements StableStorage {
 
 	@Override
 	public boolean trim(Integer instance) {
-		cache.set("last_trim",0, instance);
+		// not interesting since cyclic storage
 		return true;
-	}
-
-	@Override
-	public Integer getLastTrimInstance() {
-		return (Integer) cache.get("last_trim");
 	}
 
 	@Override

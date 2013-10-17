@@ -107,21 +107,11 @@ abstract class ConfigKey {
 	/**
 	 * see RingManager for default
 	 */	
-	public static final String deliver_skip_messages = "deliver_skip_messages";
-
-	/**
-	 * see RingManager for default
-	 */	
 	public static final String trim_quorum = "trim_quorum";
 
 	/**
 	 * see RingManager for default
 	 */	
 	public static final String trim_modulo = "trim_modulo";
-
-	/**
-	 * see RingManager for default
-	 */	
-	public static final String auto_trim = "auto_trim";
 
 }

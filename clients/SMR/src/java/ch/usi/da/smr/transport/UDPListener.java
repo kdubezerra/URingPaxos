@@ -56,7 +56,6 @@ public class UDPListener implements Runnable {
 					Message m = Message.fromByteArray(Arrays.copyOfRange(packet.getData(),0,packet.getLength()));
 					receiver.receive(m);
 				}
-			} catch (SocketException e) {
 			} catch (IOException e) {
 				e.printStackTrace();
 			}

@@ -33,8 +33,6 @@ public class NoStorage implements StableStorage {
 
 	//private final static Logger logger = Logger.getLogger(NoStorage.class);
 
-	private int last_trimmed_instance = 0;
-	
 	@Override
 	public void put(Integer instance, Decision decision) {
 		/*if(logger.isDebugEnabled()){
@@ -57,13 +55,7 @@ public class NoStorage implements StableStorage {
 
 	@Override
 	public boolean trim(Integer instance) {
-		last_trimmed_instance = instance;
 		return true;
-	}
-
-	@Override
-	public Integer getLastTrimInstance() {
-		return last_trimmed_instance;
 	}
 
 	@Override

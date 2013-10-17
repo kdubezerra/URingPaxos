@@ -4,7 +4,6 @@ namespace hs paxos
 
 struct Value {
   1: binary cmd,
-  2: optional bool skip
 }
 
 struct Decision {
