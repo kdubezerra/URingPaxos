@@ -277,8 +277,11 @@ public class RingManager implements Watcher {
 		}
 
 		// register and watch node ID
-		if(zoo.exists(path + "/" + id_path,false) == null){
-			zoo.create(path + "/" + id_path,null,Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
+		try {
+		   if (zoo.exists(path + "/" + id_path, false) == null)
+		      zoo.create(path + "/" + id_path,null,Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
+		} catch (NodeExistsException e) {
+		   System.out.println(path + " already exists; leaving it alone and proceeding.");
 		}
 		l = zoo.getChildren(path + "/" + id_path, true); // start watching
 		byte[] b = (addr.getHostString() + ";" + addr.getPort()).getBytes(); // store the SocketAddress
