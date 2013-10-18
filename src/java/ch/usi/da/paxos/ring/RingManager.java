@@ -103,9 +103,10 @@ public class RingManager implements Watcher {
 	
 	public long boot_time = 1381954123380L;
 	
-	private boolean checkThenCreate(String path, byte[] data) {
+	private boolean checkThenCreate(String path, byte[] data, boolean... ephemeral) {
+	   CreateMode createMode = (ephemeral.length > 0 && ephemeral[0]) ? CreateMode.EPHEMERAL : CreateMode.PERSISTENT;
 	   try {
-	      zoo.create(path, data, Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+	      zoo.create(path, data, Ids.OPEN_ACL_UNSAFE, createMode);
 	   }
 	   catch (KeeperException.NodeExistsException e) {
 	      return false;
@@ -256,6 +257,7 @@ public class RingManager implements Watcher {
 			zoo.create(path + "/" + config_path + "/" + ConfigKey.trim_modulo,"0".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
 			zoo.create(path + "/" + config_path + "/" + ConfigKey.trim_quorum,"2".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
 		}
+
 		l = zoo.getChildren(path + "/" + config_path,false);
 		for(String k : l){
 			String v = new String(zoo.getData(path + "/" + config_path + "/" + k,false,null));
