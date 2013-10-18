@@ -109,12 +109,14 @@ public class RingManager implements Watcher {
 	      zoo.create(path, data, Ids.OPEN_ACL_UNSAFE, createMode);
 	   }
 	   catch (KeeperException.NodeExistsException e) {
+	      logger.debug("Path " + path + " already exists. Proceeding with execution.");
 	      return false;
 	   }
 	   catch (InterruptedException | KeeperException e) {
 	      if (e instanceof KeeperException.NodeExistsException) {
-	         System.err.println("didn't catch KeeperException.NodeExistsException in the right place!");
-	         System.err.println("exiting.");
+	         e.printStackTrace();
+	         logger.error("didn't catch KeeperException.NodeExistsException in the right place!");
+	         logger.error("exiting.");
 	         System.exit(1);
 	      }
 	      e.printStackTrace();
@@ -188,6 +190,8 @@ public class RingManager implements Watcher {
 			}
 		}
 		
+		setBootTime(zoo);
+		
 //		// create boottime
 //		String boot_timePath = prefix + "/boot_time.bin";
 //		if (zoo.exists(boot_timePath, false) == null) {
@@ -238,26 +242,21 @@ public class RingManager implements Watcher {
 		}
 
 		// load/set ringpaxos configuration
-		if(zoo.exists(path + "/" + config_path,false) == null){
-			zoo.create(path + "/" + config_path,null,Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
-			zoo.create(path + "/" + config_path + "/" + ConfigKey.p1_preexecution_number,"5000".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
-			zoo.create(path + "/" + config_path + "/" + ConfigKey.p1_resend_time,"60000".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);	
-			zoo.create(path + "/" + config_path + "/" + ConfigKey.concurrent_values,"20".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
-			zoo.create(path + "/" + config_path + "/" + ConfigKey.value_size,"32768".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
-			zoo.create(path + "/" + config_path + "/" + ConfigKey.value_count,"900000".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
-//			zoo.create(path + "/" + config_path + "/" + ConfigKey.value_resend_time,"3000".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
-			// TODO: fix value_resend_time?
-			zoo.create(path + "/" + config_path + "/" + ConfigKey.value_resend_time,"60000".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
-			zoo.create(path + "/" + config_path + "/" + ConfigKey.quorum_size,"2".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
-			zoo.create(path + "/" + config_path + "/" + ConfigKey.stable_storage,"ch.usi.da.paxos.storage.SyncBerkeleyStorage".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
-			zoo.create(path + "/" + config_path + "/" + ConfigKey.tcp_nodelay,"0".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
-			zoo.create(path + "/" + config_path + "/" + ConfigKey.tcp_crc,"0".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);	
-			zoo.create(path + "/" + config_path + "/" + ConfigKey.buffer_size,"2097152".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
-			zoo.create(path + "/" + config_path + "/" + ConfigKey.learner_recovery,"1".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
-			zoo.create(path + "/" + config_path + "/" + ConfigKey.trim_modulo,"0".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
-			zoo.create(path + "/" + config_path + "/" + ConfigKey.trim_quorum,"2".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
-		}
-
+		checkThenCreate(path + "/" + config_path,null);
+		checkThenCreate(path + "/" + config_path + "/" + ConfigKey.p1_preexecution_number,"5000".getBytes());
+		checkThenCreate(path + "/" + config_path + "/" + ConfigKey.p1_resend_time,"60000".getBytes());	
+		checkThenCreate(path + "/" + config_path + "/" + ConfigKey.concurrent_values,"20".getBytes());
+		checkThenCreate(path + "/" + config_path + "/" + ConfigKey.value_size,"32768".getBytes());
+		checkThenCreate(path + "/" + config_path + "/" + ConfigKey.value_count,"900000".getBytes());
+		checkThenCreate(path + "/" + config_path + "/" + ConfigKey.value_resend_time,"60000".getBytes());
+		checkThenCreate(path + "/" + config_path + "/" + ConfigKey.quorum_size,"2".getBytes());
+		checkThenCreate(path + "/" + config_path + "/" + ConfigKey.stable_storage,"ch.usi.da.paxos.storage.SyncBerkeleyStorage".getBytes());
+		checkThenCreate(path + "/" + config_path + "/" + ConfigKey.tcp_nodelay,"0".getBytes());
+		checkThenCreate(path + "/" + config_path + "/" + ConfigKey.tcp_crc,"0".getBytes());	
+		checkThenCreate(path + "/" + config_path + "/" + ConfigKey.buffer_size,"2097152".getBytes());
+		checkThenCreate(path + "/" + config_path + "/" + ConfigKey.learner_recovery,"1".getBytes());
+		checkThenCreate(path + "/" + config_path + "/" + ConfigKey.trim_modulo,"0".getBytes());
+		checkThenCreate(path + "/" + config_path + "/" + ConfigKey.trim_quorum,"2".getBytes());
 		l = zoo.getChildren(path + "/" + config_path,false);
 		for(String k : l){
 			String v = new String(zoo.getData(path + "/" + config_path + "/" + k,false,null));
@@ -266,12 +265,10 @@ public class RingManager implements Watcher {
 		quorum = Integer.parseInt(configuration.get(ConfigKey.quorum_size));
 
 		// load/set multi ring paxos configuration
-		if(zoo.exists(prefix + "/" + config_path,false) == null){
-			zoo.create(prefix + "/" + config_path,null,Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
-			zoo.create(prefix + "/" + config_path + "/" + ConfigKey.multi_ring_m,"1".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
-			zoo.create(prefix + "/" + config_path + "/" + ConfigKey.multi_ring_lambda,"9000".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
-			zoo.create(prefix + "/" + config_path + "/" + ConfigKey.multi_ring_delta_t,"100".getBytes(),Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
-		}
+		checkThenCreate(prefix + "/" + config_path,null);
+		checkThenCreate(prefix + "/" + config_path + "/" + ConfigKey.multi_ring_m,"1".getBytes());
+		checkThenCreate(prefix + "/" + config_path + "/" + ConfigKey.multi_ring_lambda,"9000".getBytes());
+		checkThenCreate(prefix + "/" + config_path + "/" + ConfigKey.multi_ring_delta_t,"100".getBytes());
 		l = zoo.getChildren(prefix + "/" + config_path,false);
 		for(String k : l){
 			String v = new String(zoo.getData(prefix + "/" + config_path + "/" + k,false,null));
@@ -279,12 +276,7 @@ public class RingManager implements Watcher {
 		}
 
 		// register and watch node ID
-		try {
-		   if (zoo.exists(path + "/" + id_path, false) == null)
-		      zoo.create(path + "/" + id_path,null,Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
-		} catch (NodeExistsException e) {
-		   System.out.println(path + " already exists; leaving it alone and proceeding.");
-		}
+      checkThenCreate(path + "/" + id_path,null);
 		l = zoo.getChildren(path + "/" + id_path, true); // start watching
 		byte[] b = (addr.getHostString() + ";" + addr.getPort()).getBytes(); // store the SocketAddress
 		// special case for EC2 inter-region ring; publish public IP
@@ -333,25 +325,17 @@ public class RingManager implements Watcher {
 	
 	private void setBootTime(ZooKeeper zoo) {
       String boot_timePath = prefix + "/boot_time.bin";
-      try {
-         byte[] local_boot = new Long(System.currentTimeMillis() - 60000L).toString().getBytes();
-         zoo.create(boot_timePath, local_boot, Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-      } catch (KeeperException.NodeExistsException e) {
-//         e.printStackTrace();
-         System.out.println("Zookeeper node " + boot_timePath + " already exists. Boot time already set by someone.");
-      } catch (InterruptedException | KeeperException e) {
-         e.printStackTrace();
-         System.exit(1);
-      }
+      byte[] local_boot = new Long(System.currentTimeMillis() - 60000L).toString().getBytes();
+      checkThenCreate(boot_timePath, local_boot);
 
-      byte[] boot_time_zk = null;
+      byte[] agreed_boot_time = null;
       try {
-         boot_time_zk = zoo.getData(boot_timePath, false, null);
+         agreed_boot_time = zoo.getData(boot_timePath, false, null);
       } catch (KeeperException | InterruptedException e) {
          e.printStackTrace();
          System.exit(1);
       }
-      boot_time = Long.parseLong(new String(boot_time_zk));
+      boot_time = Long.parseLong(new String(agreed_boot_time));
 
       System.out.println("boot_time sucessfully set to " + boot_time);
    }
@@ -531,7 +515,6 @@ public class RingManager implements Watcher {
 					last_acceptor = max;
 					coordinator = min;
 					if(nodeID == min && old_coordinator != coordinator){
-					   setBootTime(zoo);
 					   notifyNewCoordinator();
 					}
 				}else if(event.getPath().startsWith(prefix + "/" + rid_path)){
