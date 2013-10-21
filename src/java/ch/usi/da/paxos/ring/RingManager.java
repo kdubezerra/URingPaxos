@@ -225,21 +225,13 @@ public class RingManager implements Watcher {
 //		System.out.println("boot_time sucessfully set to " + boot_time);
 
 		// register and watch ring ID
-		if(zoo.exists(prefix + "/" + rid_path,false) == null) {
-			zoo.create(prefix + "/" + rid_path,null,Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
-		}
+		checkThenCreate(prefix + "/" + rid_path,null);
 		List<String> l = zoo.getChildren(prefix + "/" + rid_path, true);
 		for(String s : l){
 			zoo.getChildren(prefix + "/" + rid_path + "/" + s, true);
 		}
-		if(zoo.exists(prefix + "/" + rid_path + "/" + ringID,false) == null){
-			zoo.create(prefix + "/" + rid_path + "/" + ringID,null,Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);
-		}
-		try {
-			zoo.create(prefix + "/" + rid_path + "/" + ringID + "/" + nodeID,null,Ids.OPEN_ACL_UNSAFE,CreateMode.EPHEMERAL);
-		} catch (NodeExistsException e){
-			logger.error("Node ID " + nodeID + " in ring " + ringID + " already registred!");
-		}
+		checkThenCreate(prefix + "/" + rid_path + "/" + ringID,null);
+		checkThenCreate(prefix + "/" + rid_path + "/" + ringID + "/" + nodeID,null);
 
 		// load/set ringpaxos configuration
 		checkThenCreate(path + "/" + config_path,null);
@@ -287,11 +279,7 @@ public class RingManager implements Watcher {
 				logger.warn("Publish env(IP) in zookeeper: " + new String(b) + "!");
 			}
 		}
-		try {
-			zoo.create(path + "/" + id_path + "/" + nodeID,b,Ids.OPEN_ACL_UNSAFE,CreateMode.EPHEMERAL);
-		} catch (NodeExistsException e){
-			logger.error("Node ID " + nodeID + " in ring " + ringID + " already registred!");
-		}
+		checkThenCreate(path + "/" + id_path + "/" + nodeID, b, true);
 		
 		// get last_acceptor and current coordinator
 		try {
