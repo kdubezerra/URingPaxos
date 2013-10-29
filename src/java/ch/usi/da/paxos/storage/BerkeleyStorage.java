@@ -90,7 +90,7 @@ public class BerkeleyStorage implements StableStorage {
             System.out.println("Failed to get process's id!");
             System.exit(1);
          }
-         file = new File("/tmp/ringpaxos-db/" + pid);
+         file = new File("/tmp/eduardo/ringpaxos-db/" + pid);
          file.mkdirs();
       }
       EnvironmentConfig envConfig = new EnvironmentConfig();
