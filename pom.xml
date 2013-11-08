@@ -37,11 +37,12 @@
 	<dependencies>
 	
 		<dependency>
-			<groupId>org.apache.hadoop</groupId>
+			<groupId>org.apache.zookeeper</groupId>
 			<artifactId>zookeeper</artifactId>
-			<version>3.3.1</version>
+			<version>3.4.5</version>
 			<type>jar</type>
 			<exclusions>
+<<<<<<< HEAD
 				<exclusion>
 					<groupId>com.sun.jdmk</groupId>
 					<artifactId>jmxtools</artifactId>
@@ -51,6 +52,17 @@
 					<artifactId>jmxri</artifactId>
 				</exclusion>
 			</exclusions>
+=======
+        			<exclusion>
+          				<groupId>com.sun.jdmk</groupId>
+          				<artifactId>jmxtools</artifactId>
+        			</exclusion>
+        			<exclusion>
+          				<groupId>com.sun.jmx</groupId>
+          				<artifactId>jmxri</artifactId>
+        			</exclusion>
+    			</exclusions>
+>>>>>>> f1d3fc744d8dc05ff23af8148d9a4b230c8131a7
 		</dependency>
 		
 		<dependency>
@@ -78,9 +90,11 @@
 		</dependency>
 		
 		<dependency>
-			<groupId>org.slf4j</groupId>
-			<artifactId>slf4j-log4j12</artifactId>
-			<version>1.5.8</version>
+
+    			<groupId>org.slf4j</groupId>
+    			<artifactId>slf4j-log4j12</artifactId>
+    			<version>1.7.5</version>
+
 		</dependency>
 		
 		<dependency>
