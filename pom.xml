@@ -35,14 +35,13 @@
 	</repositories>
 
 	<dependencies>
-	
+
 		<dependency>
 			<groupId>org.apache.zookeeper</groupId>
 			<artifactId>zookeeper</artifactId>
 			<version>3.4.5</version>
 			<type>jar</type>
 			<exclusions>
-<<<<<<< HEAD
 				<exclusion>
 					<groupId>com.sun.jdmk</groupId>
 					<artifactId>jmxtools</artifactId>
@@ -52,70 +51,51 @@
 					<artifactId>jmxri</artifactId>
 				</exclusion>
 			</exclusions>
-=======
-        			<exclusion>
-          				<groupId>com.sun.jdmk</groupId>
-          				<artifactId>jmxtools</artifactId>
-        			</exclusion>
-        			<exclusion>
-          				<groupId>com.sun.jmx</groupId>
-          				<artifactId>jmxri</artifactId>
-        			</exclusion>
-    			</exclusions>
->>>>>>> f1d3fc744d8dc05ff23af8148d9a4b230c8131a7
 		</dependency>
-		
+
 		<dependency>
 			<artifactId>je</artifactId>
 			<groupId>com.sleepycat</groupId>
 			<version>5.0.58</version>
 		</dependency>
-		
+
 		<dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-api</artifactId>
-      <version>2.0-beta9</version>
-    </dependency>
-  
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-core</artifactId>
-      <version>2.0-beta9</version>
-    </dependency>
-		
+			<groupId>org.apache.logging.log4j</groupId>
+			<artifactId>log4j-api</artifactId>
+			<version>2.0-beta9</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.logging.log4j</groupId>
+			<artifactId>log4j-core</artifactId>
+			<version>2.0-beta9</version>
+		</dependency>
+
 		<dependency>
 			<groupId>org.apache.thrift</groupId>
 			<artifactId>libthrift</artifactId>
 			<version>0.9.0</version>
 		</dependency>
-		
-		<dependency>
 
-    			<groupId>org.slf4j</groupId>
-    			<artifactId>slf4j-log4j12</artifactId>
-    			<version>1.7.5</version>
-
-		</dependency>
-		
 		<dependency>
 			<groupId>spy</groupId>
 			<artifactId>spymemcached</artifactId>
 			<version>2.8.1</version>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-math3</artifactId>
 			<version>3.2</version>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
 			<version>4.11</version>
 			<scope>test</scope>
 		</dependency>
-		
+
 	</dependencies>
 
 	<build>
