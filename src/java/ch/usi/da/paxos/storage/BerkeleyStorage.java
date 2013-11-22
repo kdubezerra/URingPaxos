@@ -101,7 +101,6 @@ public class BerkeleyStorage implements StableStorage {
       dbConfig.setAllowCreate(!readonly);
 
       // performance settings
-      dbConfig.setTransactional(true);
       envConfig.setTransactional(true);
       envConfig.setCacheMode(CacheMode.DEFAULT);
       // envConfig.setCacheSize(1000000*800); // 800M
@@ -111,6 +110,7 @@ public class BerkeleyStorage implements StableStorage {
       } else {
          envConfig.setDurability(Durability.COMMIT_SYNC);
          dbConfig.setDeferredWrite(false);
+         dbConfig.setTransactional(true);
       }
 
       env = new Environment(file, envConfig);
