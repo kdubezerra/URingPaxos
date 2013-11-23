@@ -78,8 +78,9 @@ public class TCPSender implements Runnable {
 							buffer.putLong(Message.getCRC32(m));
 						}
 						buffer.flip();
-						client.write(buffer); // client runs in blocking mode !
-						buffer.compact();
+						while(buffer.remaining() > 0)
+						   client.write(buffer); // client runs in blocking mode !
+						buffer.clear();
 						manager.send_count++;
 						manager.send_bytes = manager.send_bytes + lenght;
 					}else{
