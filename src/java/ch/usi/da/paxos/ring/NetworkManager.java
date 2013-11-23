@@ -306,10 +306,10 @@ public class NetworkManager {
 	 * @param m the message to send
 	 */
 	public void send(Message m){
-		//try {
+		try {
 			send_queue.transfer(m); // (blocking call)
-		//} catch (InterruptedException e) {
-		//}
+		} catch (InterruptedException e) {
+		}
 	}
 	
 	/**
