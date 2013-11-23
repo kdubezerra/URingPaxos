@@ -47,10 +47,8 @@ public class Util {
 		// process rings
 		List<RingDescription> rings = new ArrayList<RingDescription>();
 		for (String r : ringsArg.split(";")) {
-			int ringID = Integer
-					.parseInt(r.split(":")[0].split(",")[0]);
-			int nodeID = Integer
-					.parseInt(r.split(":")[0].split(",")[1]);
+			int ringID = Integer.parseInt(r.split(":")[0].split(",")[0]);
+			int nodeID = Integer.parseInt(r.split(":")[0].split(",")[1]);
 			String roles = r.split(":")[1];
 			rings.add(new RingDescription(ringID, nodeID, getPaxosRoles(roles)));
 		}
@@ -59,15 +57,15 @@ public class Util {
 	
 	private static List<PaxosRole> getPaxosRoles(String rs) {
 		List<PaxosRole> roles = new ArrayList<PaxosRole>();
-		if (rs.toLowerCase().contains("p")) {
+//		if (rs.toLowerCase().contains("p"))
 			roles.add(PaxosRole.Proposer);
-		}
-		if (rs.toLowerCase().contains("a")) {
+
+//		if (rs.toLowerCase().contains("a"))
 			roles.add(PaxosRole.Acceptor);
-		}
-		if (rs.toLowerCase().contains("l")) {
+
+//		if (rs.toLowerCase().contains("l"))
 			roles.add(PaxosRole.Learner);
-		}
+
 		return roles;
 	}
 

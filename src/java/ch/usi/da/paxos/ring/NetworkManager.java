@@ -25,6 +25,8 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.TransferQueue;
 
@@ -304,10 +306,10 @@ public class NetworkManager {
 	 * @param m the message to send
 	 */
 	public void send(Message m){
-		try {
+		//try {
 			send_queue.transfer(m); // (blocking call)
-		} catch (InterruptedException e) {
-		}
+		//} catch (InterruptedException e) {
+		//}
 	}
 	
 	/**
