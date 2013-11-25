@@ -60,15 +60,24 @@ public class SessionHandler {
 	boolean hasCompleteMessage(ByteBuffer buf) {
       int bytes = buf.limit() - buf.position();
 
-      if (bytes < 4)
+      if (bytes < 4) {
+//         System.out.println("hasCompleteMessage = false");
          return false;
+      }
 
       int length = buf.getInt();
       buf.position(buf.position() - 4);
 
-      if (bytes < 4 + length)
+      int expected_length = 4 + length;
+      if (manager.crc_32)
+         expected_length += 8;
+      
+      if (bytes < expected_length) {
+//         System.out.println("hasCompleteMessage = false");
          return false;
+      }
 
+//      System.out.println("hasCompleteMessage = true");
       return true;
 	}
 	
@@ -84,11 +93,13 @@ public class SessionHandler {
 					ch.socket().shutdownInput();
 				}else if (count > 0) {
 				   
+//				   System.out.println("Received message");
 				   
 				   
-				   readBuffer.flip();
+				   
+//				   readBuffer.flip();
 	            while (hasCompleteMessage(readBuffer)) {
-	               int length = readBuffer.getInt();
+//	               System.out.println("has complete message");
 	               
                   msize = readBuffer.getInt();
                   if(manager.crc_32) msize += 8;

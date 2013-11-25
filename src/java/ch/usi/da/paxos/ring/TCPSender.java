@@ -70,19 +70,25 @@ public class TCPSender implements Runnable {
 				m = send_queue.poll(1000,TimeUnit.SECONDS);
 				if(m != null){
 					int length = Message.length(m);
-					if(buffer.remaining() >= length + 8){
+					if(buffer.remaining() >= length + 4){
 //						buffer.putInt(NetworkManager.MAGIC_NUMBER);
 						buffer.putInt(length);
+						
+
+						
 						Message.toBuffer(buffer, m);
 						
-						
+//                  System.out.println(String.format("Message.length(m) = %d, buffer.position() = %d", length, buffer.position()));						
 						
 						if(manager.crc_32){
 							buffer.putLong(Message.getCRC32(m));
+//							System.out.println("put the crc 32 in the message buffer");
 						}
 						buffer.flip();
-						while(buffer.remaining() > 0)
-						   client.write(buffer); // client runs in blocking mode !
+						while(buffer.remaining() > 0) {
+						   int sentbytes = client.write(buffer); // client runs in blocking mode !
+//						   System.out.println(String.format("sent %d bytes", sentbytes));
+						}
 						buffer.clear();
 						manager.send_count++;
 						manager.send_bytes = manager.send_bytes + length;
