@@ -69,11 +69,14 @@ public class TCPSender implements Runnable {
 			try {
 				m = send_queue.poll(1000,TimeUnit.SECONDS);
 				if(m != null){
-					int lenght = Message.length(m);
-					if(buffer.remaining() >= lenght+8){
-						buffer.putInt(NetworkManager.MAGIC_NUMBER);
-						buffer.putInt(lenght);
+					int length = Message.length(m);
+					if(buffer.remaining() >= length + 8){
+//						buffer.putInt(NetworkManager.MAGIC_NUMBER);
+						buffer.putInt(length);
 						Message.toBuffer(buffer, m);
+						
+						
+						
 						if(manager.crc_32){
 							buffer.putLong(Message.getCRC32(m));
 						}
@@ -82,9 +85,9 @@ public class TCPSender implements Runnable {
 						   client.write(buffer); // client runs in blocking mode !
 						buffer.clear();
 						manager.send_count++;
-						manager.send_bytes = manager.send_bytes + lenght;
+						manager.send_bytes = manager.send_bytes + length;
 					}else{
-						logger.error("TCPSender buffer too small!");
+						//logger.error("TCPSender buffer too small!");
 						send_queue.add(m);
 					}
 				}

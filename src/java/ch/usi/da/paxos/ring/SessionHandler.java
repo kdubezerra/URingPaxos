@@ -27,6 +27,7 @@ import java.nio.channels.SocketChannel;
 import org.apache.log4j.Logger;
 
 import ch.usi.da.paxos.message.Message;
+import ch.usi.dslab.bezerra.zksmr.ssmr.zkSMRClient.OutstandingRequest;
 
 /**
  * Name: SessionHandler<br>
@@ -57,6 +58,21 @@ public class SessionHandler {
 		writeBuffer = ByteBuffer.allocate(2097152);
 	}
 
+	boolean hasCompleteMessage(ByteBuffer buf) {
+      int bytes = buf.limit() - buf.position();
+
+      if (bytes < 4)
+         return false;
+
+      int length = buf.getInt();
+      buf.position(buf.position() - 4);
+
+      if (bytes < 4 + length)
+         return false;
+
+      return true;
+	}
+	
 	protected synchronized void handleReadable(SelectionKey key) {
 		try {
 			SocketChannel ch = (SocketChannel) key.channel();
@@ -68,48 +84,77 @@ public class SessionHandler {
 					key.interestOps(key.interestOps() & ~SelectionKey.OP_READ);
 					ch.socket().shutdownInput();
 				}else if (count > 0) {
-					outerloop:
-					while(readBuffer.hasRemaining()){
-						if(preamble){
-							if(readBuffer.limit()-readBuffer.position() >= 8){
-								while(readBuffer.getInt() != NetworkManager.MAGIC_NUMBER){
-									readBuffer.position(readBuffer.position()-3);
-									if(readBuffer.limit()-readBuffer.position() < 4){
-										break outerloop;
-									}
-								}
-								msize = readBuffer.getInt();
-								if(manager.crc_32) msize += 8;
-								preamble = false;
-							}else{
-								break;
-							}
-						}
-						if(!preamble){
-							if(readBuffer.limit()-readBuffer.position() >= msize){
-								try{
-									Message msg = Message.fromBuffer(readBuffer);
-									if(manager.crc_32 && readBuffer.getLong() == Message.getCRC32(msg)){
-										manager.recv_count++;
-										manager.recv_bytes = manager.recv_bytes + Message.length(msg);
-										manager.receive(msg);
-									}else if(!manager.crc_32){
-										manager.recv_count++;
-										manager.recv_bytes = manager.recv_bytes + Message.length(msg);
-										manager.receive(msg);										
-									}else{
-										logger.error("Error in SessionHandler: Message CRC fail!");
-									}
-								}catch(Exception e){
-									logger.error("Error in SessionHandler during de-serializing!",e);
-								}
-								preamble = true;
-							}else{
-								break;
-							}
-						}
-					}
-					readBuffer.compact();
+				   
+				   
+				   
+				   readBuffer.flip();
+	            while (hasCompleteMessage(readBuffer)) {
+	               int length = readBuffer.getInt();
+	               
+                  msize = readBuffer.getInt();
+                  if(manager.crc_32) msize += 8;
+	               
+                  Message msg = Message.fromBuffer(readBuffer);
+
+                  if(manager.crc_32 && readBuffer.getLong() == Message.getCRC32(msg)){
+                     manager.recv_count++;
+                     manager.recv_bytes = manager.recv_bytes + Message.length(msg);
+                     manager.receive(msg);
+                  } else if(!manager.crc_32){
+                     manager.recv_count++;
+                     manager.recv_bytes = manager.recv_bytes + Message.length(msg);
+                     manager.receive(msg);                              
+                  } else{
+                     logger.error("Error in SessionHandler: Message CRC fail!");
+                  }                  
+                  
+	            }
+	            readBuffer.compact();
+				   
+				   
+				   
+//					outerloop:
+//					while(readBuffer.hasRemaining()){
+//						if(preamble){
+//							if(readBuffer.limit()-readBuffer.position() >= 8){
+//								while(readBuffer.getInt() != NetworkManager.MAGIC_NUMBER){
+//									readBuffer.position(readBuffer.position()-3);
+//									if(readBuffer.limit()-readBuffer.position() < 4){
+//										break outerloop;
+//									}
+//								}
+//								msize = readBuffer.getInt();
+//								if(manager.crc_32) msize += 8;
+//								preamble = false;
+//							}else{
+//								break;
+//							}
+//						}
+//						if(!preamble){
+//							if(readBuffer.limit()-readBuffer.position() >= msize){
+//								try{
+//									Message msg = Message.fromBuffer(readBuffer);
+//									if(manager.crc_32 && readBuffer.getLong() == Message.getCRC32(msg)){
+//										manager.recv_count++;
+//										manager.recv_bytes = manager.recv_bytes + Message.length(msg);
+//										manager.receive(msg);
+//									}else if(!manager.crc_32){
+//										manager.recv_count++;
+//										manager.recv_bytes = manager.recv_bytes + Message.length(msg);
+//										manager.receive(msg);										
+//									}else{
+//										logger.error("Error in SessionHandler: Message CRC fail!");
+//									}
+//								}catch(Exception e){
+//									logger.error("Error in SessionHandler during de-serializing!",e);
+//								}
+//								preamble = true;
+//							}else{
+//								break;
+//							}
+//						}
+//					}
+//					readBuffer.compact();
 				}
 			}
 		} catch (ClosedChannelException e) {
