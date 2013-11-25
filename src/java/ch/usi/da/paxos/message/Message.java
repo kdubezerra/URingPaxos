@@ -219,9 +219,12 @@ public class Message implements Serializable {
 	 * @return length of the message on the wire (without length prefix)
 	 */
 	public static int length(Message m){
-		int length = 24;
+		int length = 20;
 		if(m.getValue() != null){
-			length = length + m.getValue().getByteID().length + 4 + m.getValue().getValue().length;
+			length += 4 + m.getValue().getByteID().length + 4 + m.getValue().getValue().length;
+		}
+		else {
+		   length += 4;
 		}
 		return length;
 	}

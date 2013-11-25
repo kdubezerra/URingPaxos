@@ -307,7 +307,7 @@ public class NetworkManager {
 	 */
 	public void send(Message m){
 		try {
-			send_queue.put(m); // (blocking call)
+			send_queue.transfer(m); // (blocking call)
 		} catch (InterruptedException e) {
 		}
 	}

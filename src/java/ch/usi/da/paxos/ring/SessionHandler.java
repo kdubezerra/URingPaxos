@@ -61,7 +61,7 @@ public class SessionHandler {
       int bytes = buf.limit() - buf.position();
 
       if (bytes < 4) {
-         System.out.println("hasCompleteMessage = false");
+//         System.out.println(String.format("hasCompleteMessage = false: only %d bytes", bytes));
          return false;
       }
 
@@ -73,11 +73,11 @@ public class SessionHandler {
          expected_length += 8;
       
       if (bytes < expected_length) {
-         System.out.println("hasCompleteMessage = false");
+//         System.out.println(String.format("hasCompleteMessage = false: only %d bytes of %d expected", bytes, expected_length));
          return false;
       }
 
-      System.out.println("hasCompleteMessage = true");
+//      System.out.println("hasCompleteMessage = true");
       return true;
 	}
 	
@@ -93,13 +93,13 @@ public class SessionHandler {
 					ch.socket().shutdownInput();
 				}else if (count > 0) {
 				   
-				   System.out.println("Received message");
+//				   System.out.println("Received message");
 				   
 				   
 				   
 //				   readBuffer.flip();
 	            while (hasCompleteMessage(readBuffer)) {
-	               System.out.println("has complete message");
+//	               System.out.println("has complete message");
 	               
                   msize = readBuffer.getInt();
                   if(manager.crc_32) msize += 8;
