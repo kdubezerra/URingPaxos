@@ -27,7 +27,6 @@ import java.nio.channels.SocketChannel;
 import org.apache.log4j.Logger;
 
 import ch.usi.da.paxos.message.Message;
-import ch.usi.dslab.bezerra.zksmr.ssmr.zkSMRClient.OutstandingRequest;
 
 /**
  * Name: SessionHandler<br>
@@ -96,15 +95,15 @@ public class SessionHandler {
 	               
                   Message msg = Message.fromBuffer(readBuffer);
 
-                  if(manager.crc_32 && readBuffer.getLong() == Message.getCRC32(msg)){
+                  if(manager.crc_32 && readBuffer.getLong() == Message.getCRC32(msg)) {
                      manager.recv_count++;
                      manager.recv_bytes = manager.recv_bytes + Message.length(msg);
                      manager.receive(msg);
-                  } else if(!manager.crc_32){
+                  } else if(!manager.crc_32) {
                      manager.recv_count++;
                      manager.recv_bytes = manager.recv_bytes + Message.length(msg);
                      manager.receive(msg);                              
-                  } else{
+                  } else {
                      logger.error("Error in SessionHandler: Message CRC fail!");
                   }                  
                   
