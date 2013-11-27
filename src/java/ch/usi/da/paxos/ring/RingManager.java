@@ -242,7 +242,7 @@ public class RingManager implements Watcher {
 		checkThenCreate(path + "/" + config_path + "/" + ConfigKey.value_count,"900000".getBytes());
 		checkThenCreate(path + "/" + config_path + "/" + ConfigKey.value_resend_time,"60000".getBytes());
 		checkThenCreate(path + "/" + config_path + "/" + ConfigKey.quorum_size,"2".getBytes());
-		checkThenCreate(path + "/" + config_path + "/" + ConfigKey.stable_storage,"ch.usi.da.paxos.storage.InMemory".getBytes());
+		checkThenCreate(path + "/" + config_path + "/" + ConfigKey.stable_storage,"ch.usi.da.paxos.storage.SyncBerkeleyStorage".getBytes());
 		checkThenCreate(path + "/" + config_path + "/" + ConfigKey.tcp_nodelay,"1".getBytes());
 		checkThenCreate(path + "/" + config_path + "/" + ConfigKey.tcp_crc,"0".getBytes());	
 		checkThenCreate(path + "/" + config_path + "/" + ConfigKey.buffer_size,"2097152".getBytes());
