@@ -50,7 +50,7 @@ public class TCPSender implements Runnable {
 	
 	private final TransferQueue<Message> send_queue;
 	
-	private final ByteBuffer buffer = ByteBuffer.allocate(65536);
+	private final ByteBuffer buffer = ByteBuffer.allocate(262144);
 	
 	/**
 	 * @param manager

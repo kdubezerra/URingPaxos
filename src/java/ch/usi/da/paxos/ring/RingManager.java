@@ -242,7 +242,8 @@ public class RingManager implements Watcher {
 		checkThenCreate(path + "/" + config_path + "/" + ConfigKey.value_count,"900000".getBytes());
 		checkThenCreate(path + "/" + config_path + "/" + ConfigKey.value_resend_time,"60000".getBytes());
 		checkThenCreate(path + "/" + config_path + "/" + ConfigKey.quorum_size,"2".getBytes());
-		checkThenCreate(path + "/" + config_path + "/" + ConfigKey.stable_storage,"ch.usi.da.paxos.storage.SyncBerkeleyStorage".getBytes());
+//		checkThenCreate(path + "/" + config_path + "/" + ConfigKey.stable_storage,"ch.usi.da.paxos.storage.SyncBerkeleyStorage".getBytes());
+		checkThenCreate(path + "/" + config_path + "/" + ConfigKey.stable_storage,"ch.usi.da.paxos.storage.InMemory".getBytes());
 		checkThenCreate(path + "/" + config_path + "/" + ConfigKey.tcp_nodelay,"1".getBytes());
 		checkThenCreate(path + "/" + config_path + "/" + ConfigKey.tcp_crc,"0".getBytes());	
 		checkThenCreate(path + "/" + config_path + "/" + ConfigKey.buffer_size,"2097152".getBytes());
@@ -260,7 +261,9 @@ public class RingManager implements Watcher {
 		checkThenCreate(prefix + "/" + config_path,null);
 		checkThenCreate(prefix + "/" + config_path + "/" + ConfigKey.multi_ring_m,"1".getBytes());
 		checkThenCreate(prefix + "/" + config_path + "/" + ConfigKey.multi_ring_lambda,"9000".getBytes());
+//		checkThenCreate(prefix + "/" + config_path + "/" + ConfigKey.multi_ring_delta_t,"40".getBytes());
 		checkThenCreate(prefix + "/" + config_path + "/" + ConfigKey.multi_ring_delta_t,"5".getBytes());
+
 		l = zoo.getChildren(prefix + "/" + config_path,false);
 		for(String k : l){
 			String v = new String(zoo.getData(prefix + "/" + config_path + "/" + k,false,null));
