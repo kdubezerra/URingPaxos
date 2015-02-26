@@ -39,7 +39,7 @@ import org.apache.zookeeper.ZooKeeper;
 * a ring is only a learner in that ring, having no other role (e.g., acceptor).
 * Finally, we assume that the last acceptor is right before the first learner.<br>
 *
-* Name: RingManager<br>
+* Name: FastRingManager<br>
 * Description: <br>
 * 
 * Creation date: Feb 26, 2015<br>
@@ -73,6 +73,7 @@ public class FastRingManager extends RingManager {
     * @throws KeeperException
     * @throws InterruptedException
     */
+   @Override
    public void init() throws IOException, KeeperException, InterruptedException {
       network = new FastNetworkManager(this);
       zoo.register(this);
@@ -80,11 +81,10 @@ public class FastRingManager extends RingManager {
       network.startServer();
    }
    
+   @Override
    protected synchronized void notifyRingChanged(){
-      
       FastNetworkManager fnetwork = (FastNetworkManager) network;
-      
-      
+
       // traditional ring-paxos successos
       InetSocketAddress successorAddr = getNodeAddress(getRingSuccessor(nodeID));
       logger.info("FastRingManager ring " + topologyID + " changed: " + nodes + " (succsessor: " + getRingSuccessor(nodeID) + " at " + successorAddr + ")");

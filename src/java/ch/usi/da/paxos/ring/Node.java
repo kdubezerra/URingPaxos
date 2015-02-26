@@ -51,17 +51,17 @@ public class Node implements PaxosNode {
 
 	private final Logger logger;
 	
-	private final List<ZooKeeper> zoos = new ArrayList<ZooKeeper>(); // hold refs to close
+	protected final List<ZooKeeper> zoos = new ArrayList<ZooKeeper>(); // hold refs to close
 	
-	private final String zoo_host;
+	protected final String zoo_host;
 	
-	private final List<RingDescription> rings;
+	protected final List<RingDescription> rings;
 	
-	private boolean running = false;
+	protected boolean running = false;
 
-	private final Map<Integer, Proposer> ringProposer = new HashMap<Integer, Proposer>(); 
+	protected final Map<Integer, Proposer> ringProposer = new HashMap<Integer, Proposer>(); 
 
-	private Learner learner;
+	protected Learner learner;
 	
 	/**
 	 * @param zoo_host
@@ -156,7 +156,7 @@ public class Node implements PaxosNode {
 		return rings;
 	}
 						
-	private boolean isMultiLearner(List<RingDescription> rings) {
+	protected boolean isMultiLearner(List<RingDescription> rings) {
 		int learner_count = 0;
 		for(RingDescription ring : rings){
 			if(ring.getRoles().contains(PaxosRole.Learner)){

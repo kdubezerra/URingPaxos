@@ -40,7 +40,7 @@ import ch.usi.da.paxos.message.Message;
 * a ring is only a learner in that ring, having no other role (e.g., acceptor).
 * Finally, we assume that the last acceptor is right before the first learner.<br>
 *
-* Name: RingManager<br>
+* Name: FastNetworkManager<br>
 * Description: <br>
 * 
 * Creation date: Feb 26, 2015<br>
@@ -115,6 +115,7 @@ public class FastNetworkManager extends NetworkManager {
     * 
     * @param addr
     */
+   @Override
    public void connectClient(InetSocketAddress addr){
       client = createConnection(addr, send_queue).channel;
    }
