@@ -85,7 +85,7 @@ public class FastNetworkManager extends NetworkManager {
          //   send the message to all other learners
          // * if you are neither the last acceptor nor a learner, just follow the standard ring-paxos protocol
 
-         if (ring.getNodeID() == ring.getLastAcceptor()) {
+         if (ring.getNodeID() == ring.getLastAcceptor() && fring.currentLearners.isEmpty() == false) {
             // get the broadcasting learner, rotating the instance id among the learners
             int bcasterIndex = (int) (instanceId % (long) fring.currentLearners.size());
             int bcasterId    = fring.currentLearners.get(bcasterIndex);
