@@ -83,6 +83,7 @@ public class FastNetworkManager extends NetworkManager {
          // * if you are the last acceptor, rotate the send among all learners
          // * if you are a learner and the message came from an acceptor (i.e., you're the broadcasting learner),
          //   send the message to all other learners
+         // * if you are neither the last acceptor nor a learner, just follow the standard ring-paxos protocol
 
          if (ring.getNodeID() == ring.getLastAcceptor()) {
             // get the broadcasting learner, rotating the instance id among the learners
@@ -96,8 +97,10 @@ public class FastNetworkManager extends NetworkManager {
             // otherwise, do nothing
             if (ring.getAcceptors().contains(m.getSender())) {
                for (int learnerId : fring.currentLearners) {
-                  ConnectionInfo learnerConnection = learnersOutwardConnections.get(learnerId);
-                  learnerConnection.send_queue.transfer(m);
+                  if (learnerId != ring.getNodeID()) {
+                     ConnectionInfo learnerConnection = learnersOutwardConnections.get(learnerId);
+                     learnerConnection.send_queue.transfer(m);
+                  }
                }
                learnersSuccessorConnection.send_queue.transfer(m);
             }
