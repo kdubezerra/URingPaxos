@@ -107,7 +107,7 @@ public class RingManager extends TopologyManager {
 		}
 	}
 
-	private void notifyRingChanged(){
+	protected void notifyRingChanged(){
 		InetSocketAddress saddr = getNodeAddress(getRingSuccessor(nodeID));
 		logger.info("RingManager ring " + topologyID + " changed: " + nodes + " (succsessor: " + getRingSuccessor(nodeID) + " at " + saddr + ")");
 		if(saddr != null && currentConnection == null || !currentConnection.equals(saddr)){

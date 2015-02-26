@@ -52,15 +52,15 @@ public class NetworkManager {
 
 	private final static Logger stats = Logger.getLogger("ch.usi.da.paxos.Stats");
 
-	private final RingManager ring;
+	protected final RingManager ring;
 	
 	private ServerSocketChannel server;
 	
 	private Selector selector;
 	
-	private SocketChannel client;
+	protected SocketChannel client;
 	
-	private final TransferQueue<Message> send_queue = new LinkedTransferQueue<Message>();
+	protected final TransferQueue<Message> send_queue = new LinkedTransferQueue<Message>();
 	
 	private Role acceptor = null;
 
@@ -70,7 +70,7 @@ public class NetworkManager {
 
 	private Role proposer = null;
 
-	private boolean tcp_nodelay = false;
+	protected boolean tcp_nodelay = false;
 	
 	public boolean crc_32 = false;
 	
