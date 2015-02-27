@@ -390,7 +390,6 @@ public class TopologyManager implements Watcher {
 	public void process(WatchedEvent event) {
 		try {
 			if(event.getType() == EventType.NodeChildrenChanged){
-			   logger.info("event path = " + event.getPath() + "; learner prefix would be " + path + "/" + learner_path);
 				if(event.getPath().startsWith(path + "/" + id_path)){
 					nodes.clear();
 					List<String> l = zoo.getChildren(path + "/" + id_path, true);

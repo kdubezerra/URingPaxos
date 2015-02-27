@@ -27,7 +27,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.TransferQueue;
 
-import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
 import ch.usi.da.paxos.message.Message;
@@ -99,9 +98,9 @@ public class FastNetworkManager extends NetworkManager {
             // if this is the bcasting learner, bcast to learners (except itself) and learnersSuccessor
             // otherwise, do nothing
             if (nodeId == fring.getBroadcasterLearnerId(instanceId)) {
-               logger.info(String.format("FastNetworkManager learner %d broadcasting to learner %d: %s", nodeId, fring.getBroadcasterLearnerId(instanceId), m));
                for (int learnerId : fring.getLearners()) {
                   if (learnerId != nodeId) {
+                     logger.info(String.format("FastNetworkManager learner %d broadcasting to learner %d: %s", nodeId, learnerId, m));
                      ConnectionInfo learnerConnection = learnersOutwardConnections.get(learnerId);
                      learnerConnection.send_queue.transfer(m);
                   }
