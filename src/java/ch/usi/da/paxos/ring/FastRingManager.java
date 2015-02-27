@@ -99,7 +99,6 @@ public class FastRingManager extends RingManager {
    
    @Override
    protected synchronized void notifyLearnersChanged() {
-      System.out.println("Called FastRingManager.notifyLearnersChanged()");
       logger.info("FastRingManager ring " + topologyID + "'s new learners: " + learners);
       FastNetworkManager fnetwork = (FastNetworkManager) network;
 
@@ -127,13 +126,10 @@ public class FastRingManager extends RingManager {
       // least one non-learner)
       if (localNodeIsLearner()) {
          successorOfAllLearners = getRingSuccessor(getLastLearner());
-         System.out.println("Local node " + nodeID + " is a learner. Successor of all learners is node " + successorOfAllLearners);
          logger.info("Local node " + nodeID + " is a learner. Successor of all learners is node " + successorOfAllLearners);
          if (learners.contains(successorOfAllLearners) == false) {
-            logger.info("Local learner " + nodeID + " connecting to learnersSuccessor " + successorOfAllLearners);
+            logger.info("Local learner " + nodeID + " ensuring connection to learnersSuccessor " + successorOfAllLearners);
             fnetwork.ensureLearnersSuccessorConnection(successorOfAllLearners, getNodeAddress(successorOfAllLearners));
-         } else {
-            logger.info("Local node " + nodeID + " thinks successor " + successorOfAllLearners + " is a learner too.");
          }
       }
    }

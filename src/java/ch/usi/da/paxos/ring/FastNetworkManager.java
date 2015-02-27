@@ -69,7 +69,6 @@ public class FastNetworkManager extends NetworkManager {
       super(ring);
       learnersOutwardConnections = new ConcurrentHashMap<Integer, ConnectionInfo>();
       learnersSuccessorConnection = null;
-      logger.setLevel(Level.ALL);
    }
    
    /**
@@ -93,33 +92,22 @@ public class FastNetworkManager extends NetworkManager {
             // get the broadcasting learner, rotating the instance id among the learners
             int bcasterLearnerId = fring.getBroadcasterLearnerId(instanceId);
             ConnectionInfo bcasterLearnerConnection = learnersOutwardConnections.get(bcasterLearnerId);
-            logger.info("FastNetworkManager last acceptor sending to bcast learner " + bcasterLearnerId);
+            logger.info(String.format("FastNetworkManager last acceptor sending to broadcast-learner %d: %s", bcasterLearnerId, m));
             bcasterLearnerConnection.send_queue.transfer(m);
          }
          else if (fring.localNodeIsLearner()) {
             // if this is the bcasting learner, bcast to learners (except itself) and learnersSuccessor
             // otherwise, do nothing
             if (nodeId == fring.getBroadcasterLearnerId(instanceId)) {
-               logger.info("FastNetworkManager broadcast learner " + nodeId + " broadcasting to " + (fring.getLearners().size() - 1) + " learners");
+               logger.info(String.format("FastNetworkManager learner %d broadcasting to learner %d: %s", nodeId, fring.getBroadcasterLearnerId(instanceId), m));
                for (int learnerId : fring.getLearners()) {
                   if (learnerId != nodeId) {
                      ConnectionInfo learnerConnection = learnersOutwardConnections.get(learnerId);
                      learnerConnection.send_queue.transfer(m);
                   }
                }
-               if (learnersSuccessorConnection == null) {
-                  logger.info("FastNetworkManager learnersSuccessorConnection == null");
-               }               
-               else {
-                  logger.info("FastNetworkManager learnersSuccessorConnection != null");
-                  if (learnersSuccessorConnection.send_queue == null) 
-                     logger.info("FastNetworkManager learnersSuccessorConnection.send_queue == null");
-                  else {
-                     logger.info("FastNetworkManager learnersSuccessorConnection.send_queue != null");
+               if (learnersSuccessorConnection != null)
                      learnersSuccessorConnection.send_queue.transfer(m);
-                  }
-                     
-               }
             }
          }
          else {
@@ -195,7 +183,6 @@ public class FastNetworkManager extends NetworkManager {
    }
    
    public ConnectionInfo createConnection(InetSocketAddress addr, TransferQueue<Message> sendQueue) {
-      logger.info("FastNetworkManager creating connection with sendQueue " + (sendQueue == null ? "== null" : "!= null"));
       SocketChannel newChannel = null;
       try {
          newChannel = SocketChannel.open();
@@ -208,7 +195,7 @@ public class FastNetworkManager extends NetworkManager {
          Thread t = new Thread(new TCPSender(this,newChannel,sendQueue));
          t.setName("TCPSender");
          t.start();
-         logger.info("FastNetworkManager create connection " + addr + " (" + newChannel.getLocalAddress() + ")");
+         logger.info("FastNetworkManager created connection " + addr + " (" + newChannel.getLocalAddress() + ")");
       } catch (IOException e) {
          logger.error("FastNetworkManager client connect error",e);
       }

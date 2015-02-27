@@ -168,7 +168,9 @@ public class ProposerRole extends Role implements Proposer {
 		}
 		FutureDecision future = new FutureDecision();
 		futures.put(v.getID(),future);
-		Message m = new Message(0,ring.getNodeID(),PaxosRole.Leader,MessageType.Value,0,0,v);
+		// stamp value's message (previously unused) instance field as send_count,
+		// so that learners can take turns broadcasting values
+		Message m = new Message(send_count,ring.getNodeID(),PaxosRole.Leader,MessageType.Value,0,0,v);
 		if(batcher != null){
 			send_queue.add(m);
 		}else{
