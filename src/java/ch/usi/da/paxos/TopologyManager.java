@@ -421,6 +421,7 @@ public class TopologyManager implements Watcher {
 					for(String s : l){
 						learners.add(Integer.valueOf(s));
 					}
+					Collections.sort(learners);
 				}
 			}
 		} catch (KeeperException e) {

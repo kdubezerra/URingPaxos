@@ -51,17 +51,17 @@ public class FastRingManager extends RingManager {
 
    private final static Logger logger = Logger.getLogger(FastRingManager.class);
    
-   List<Integer> currentLearners;
+   List<Integer> previousLearners;
    private int successorOfAllLearners;
    
    public FastRingManager(int ringID, int nodeID, InetSocketAddress addr, ZooKeeper zoo) {
       super(ringID, nodeID, addr, zoo);
-      currentLearners = new ArrayList<Integer>();
+      previousLearners = new ArrayList<Integer>();
    }
    
    public FastRingManager(int ringID, int nodeID, InetSocketAddress addr, ZooKeeper zoo, String prefix) {
       super(ringID, nodeID, addr, zoo, prefix);
-      currentLearners = new ArrayList<Integer>();
+      previousLearners = new ArrayList<Integer>();
    }
 
    /**
@@ -100,29 +100,54 @@ public class FastRingManager extends RingManager {
       try { Thread.sleep(1000);} catch (InterruptedException e) { }
       
       // update connections to all learners
-      Set<Integer> newLearnerSet   = new HashSet<Integer>(getLearners());
-      Set<Integer> learnersRemoved = new HashSet<Integer>(currentLearners);
+      Set<Integer> newLearnerSet   = new HashSet<Integer>(learners);
+      Set<Integer> learnersRemoved = new HashSet<Integer>(previousLearners);
       learnersRemoved.removeAll(newLearnerSet);
-      currentLearners.clear();
-      currentLearners.addAll(newLearnerSet);
-      Collections.sort(currentLearners);
+      previousLearners.clear();
+      previousLearners.addAll(newLearnerSet);
+      Collections.sort(previousLearners);
       
       for (int removedLearnerId : learnersRemoved)
-         if (removedLearnerId != this.getNodeID())
+         if (removedLearnerId != nodeID)
             fnetwork.removeLearnerConnection(removedLearnerId);
       
-      for (int learnerId : currentLearners)
-         if (learnerId != this.getNodeID())
+      for (int learnerId : learners)
+         if (learnerId != nodeID)
             fnetwork.ensureLearnerConnection(learnerId, getNodeAddress(learnerId));
       
       
       // create special connection to the node that succeeds all learners
       // (making sure that there is at least one learner and that there is at least one non-learner)
-      if (currentLearners.isEmpty() == false) {
-         int lastLearnerId = currentLearners.get(currentLearners.size() - 1);
-         successorOfAllLearners = getRingSuccessor(lastLearnerId);
-         if (currentLearners.contains(successorOfAllLearners) == false)
+      if (learners.isEmpty() == false) {
+         successorOfAllLearners = getRingSuccessor(getLastLearner());
+         if (learners.contains(successorOfAllLearners) == false)
             fnetwork.ensureLearnersSuccessorConnection(successorOfAllLearners, getNodeAddress(successorOfAllLearners));
       }
+   }
+   
+   public boolean localNodeIsAcceptor() {
+      return acceptors.contains(nodeID);
+   }
+   
+   public boolean localNodeIsLastAcceptor() {
+      return nodeID == last_acceptor;
+   }
+   
+   public boolean localNodeIsLearner() {
+      return learners.contains(nodeID);
+   }
+   
+   public boolean hasLearners() {
+      return !learners.isEmpty();
+   }
+   
+   public int getLastLearner() {
+      return learners.get(learners.size() - 1);
+   }
+   
+   public int getBroadcasterLearnerId(long instanceId) {
+      int bcasterIndex = (int) (instanceId % (long) learners.size());
+      int bcasterId    = learners.get(bcasterIndex);
+      return bcasterId;
    }
 }

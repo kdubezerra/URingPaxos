@@ -46,7 +46,7 @@ public class RingManager extends TopologyManager {
 	
 	private final static Logger logger = Logger.getLogger(RingManager.class);
 
-	private volatile int last_acceptor = 0;
+	protected volatile int last_acceptor = 0;
 
 	/**
 	 * @param ringID

@@ -77,27 +77,28 @@ public class FastNetworkManager extends NetworkManager {
    public void send(Message m){
       try {
 
-         long instanceId = m.getInstance();
+         final int  nodeId     = ring.getNodeID();
+         final long instanceId = m.getInstance();
          FastRingManager fring = (FastRingManager) ring;
          
-         // * if you are the last acceptor, rotate the send among all learners
-         // * if you are a learner and the message came from an acceptor (i.e., you're the broadcasting learner),
-         //   send the message to all other learners
-         // * if you are neither the last acceptor nor a learner, just follow the standard ring-paxos protocol
+         // * if you are the last acceptor (and there are learners), rotate the send among all learners
+         // * if you are a learner and you're the broadcasting learner for that instanceId, then send
+         //   the message to all other learners AND the first non-learner after all learners (i.e., 
+         //   all learners' successor)
+         // * otherwise, just follow the standard ring-paxos protocol
 
-         if (ring.getNodeID() == ring.getLastAcceptor() && fring.currentLearners.isEmpty() == false) {
+         if (fring.localNodeIsLastAcceptor() && fring.hasLearners()) {
             // get the broadcasting learner, rotating the instance id among the learners
-            int bcasterIndex = (int) (instanceId % (long) fring.currentLearners.size());
-            int bcasterId    = fring.currentLearners.get(bcasterIndex);
-            ConnectionInfo bcasterLearnerConnection = learnersOutwardConnections.get(bcasterId);
+            int bcasterLearnerId = fring.getBroadcasterLearnerId(instanceId);
+            ConnectionInfo bcasterLearnerConnection = learnersOutwardConnections.get(bcasterLearnerId);
             bcasterLearnerConnection.send_queue.transfer(m);
          }
-         else if (ring.getLearners().contains(ring.getNodeID())) {
-            // if this is the bcasting learner (sender was an acceptor), bcast to learners + learnersSuccessor
+         else if (fring.localNodeIsLearner()) {
+            // if this is the bcasting learner, bcast to learners (except itself) and learnersSuccessor
             // otherwise, do nothing
-            if (ring.getAcceptors().contains(m.getSender())) {
-               for (int learnerId : fring.currentLearners) {
-                  if (learnerId != ring.getNodeID()) {
+            if (nodeId == fring.getBroadcasterLearnerId(instanceId)) {
+               for (int learnerId : fring.getLearners()) {
+                  if (learnerId != nodeId) {
                      ConnectionInfo learnerConnection = learnersOutwardConnections.get(learnerId);
                      learnerConnection.send_queue.transfer(m);
                   }
@@ -106,7 +107,7 @@ public class FastNetworkManager extends NetworkManager {
             }
          }
          else {
-            // this not a learner, nor the last acceptor
+            // this not a learner, nor the last acceptor, so follow standard protocol
             send_queue.transfer(m); // (blocking call)
          }
       } catch (InterruptedException e) {
