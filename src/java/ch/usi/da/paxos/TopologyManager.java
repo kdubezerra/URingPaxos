@@ -262,6 +262,10 @@ public class TopologyManager implements Watcher {
 	
 	private void notifyNewCoordinator() {
 	}
+	
+	protected void notifyLearnersChanged() {
+	   
+	}
 
 	/**
 	 * @return the number of acceptors needed for a quorum decision
@@ -386,6 +390,7 @@ public class TopologyManager implements Watcher {
 	public void process(WatchedEvent event) {
 		try {
 			if(event.getType() == EventType.NodeChildrenChanged){
+			   logger.info("event path = " + event.getPath() + "; learner prefix would be " + path + "/" + learner_path);
 				if(event.getPath().startsWith(path + "/" + id_path)){
 					nodes.clear();
 					List<String> l = zoo.getChildren(path + "/" + id_path, true);
@@ -422,6 +427,7 @@ public class TopologyManager implements Watcher {
 						learners.add(Integer.valueOf(s));
 					}
 					Collections.sort(learners);
+					notifyLearnersChanged();
 				}
 			}
 		} catch (KeeperException e) {
@@ -451,6 +457,8 @@ public class TopologyManager implements Watcher {
 				zoo.getChildren(path + "/" + acceptor_path, true);
 				zoo.create(path + "/" + acceptor_path + "/" + nodeID,null,Ids.OPEN_ACL_UNSAFE,CreateMode.EPHEMERAL);
 				roles.add(role);
+				// acceptors now watch for learners as well
+				zoo.getChildren(path + "/" + learner_path, true);
 			}else if (role.equals(PaxosRole.Learner)){
 				if(zoo.exists(path + "/" + learner_path,false) == null){
 					zoo.create(path + "/" + learner_path,null,Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);

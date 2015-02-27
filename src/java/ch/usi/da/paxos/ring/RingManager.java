@@ -117,7 +117,7 @@ public class RingManager extends TopologyManager {
 		}
 	}
 	
-	private void notifyNewCoordinator(){
+	protected void notifyNewCoordinator(){
 		logger.info("RingManger this node is the new coordinator for ring " + topologyID + "!");
 		Thread c = new Thread(new CoordinatorRole(this));
 		c.setName("Coordinator");

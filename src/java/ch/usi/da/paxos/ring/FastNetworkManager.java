@@ -27,6 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.TransferQueue;
 
+import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
 import ch.usi.da.paxos.message.Message;
@@ -54,8 +55,8 @@ public class FastNetworkManager extends NetworkManager {
       public SocketChannel channel;
       public TransferQueue<Message> send_queue;
       public ConnectionInfo(SocketChannel ch, TransferQueue<Message> q) {
-         channel = ch;
-         q = send_queue;
+         channel    = ch;
+         send_queue = q;
       }
    }
    
@@ -68,6 +69,7 @@ public class FastNetworkManager extends NetworkManager {
       super(ring);
       learnersOutwardConnections = new ConcurrentHashMap<Integer, ConnectionInfo>();
       learnersSuccessorConnection = null;
+      logger.setLevel(Level.ALL);
    }
    
    /**
@@ -77,9 +79,9 @@ public class FastNetworkManager extends NetworkManager {
    public void send(Message m){
       try {
 
-         final int  nodeId     = ring.getNodeID();
-         final long instanceId = m.getInstance();
          FastRingManager fring = (FastRingManager) ring;
+         final int  nodeId     = fring.getNodeID();
+         final long instanceId = m.getInstance();
          
          // * if you are the last acceptor (and there are learners), rotate the send among all learners
          // * if you are a learner and you're the broadcasting learner for that instanceId, then send
@@ -91,19 +93,33 @@ public class FastNetworkManager extends NetworkManager {
             // get the broadcasting learner, rotating the instance id among the learners
             int bcasterLearnerId = fring.getBroadcasterLearnerId(instanceId);
             ConnectionInfo bcasterLearnerConnection = learnersOutwardConnections.get(bcasterLearnerId);
+            logger.info("FastNetworkManager last acceptor sending to bcast learner " + bcasterLearnerId);
             bcasterLearnerConnection.send_queue.transfer(m);
          }
          else if (fring.localNodeIsLearner()) {
             // if this is the bcasting learner, bcast to learners (except itself) and learnersSuccessor
             // otherwise, do nothing
             if (nodeId == fring.getBroadcasterLearnerId(instanceId)) {
+               logger.info("FastNetworkManager broadcast learner " + nodeId + " broadcasting to " + (fring.getLearners().size() - 1) + " learners");
                for (int learnerId : fring.getLearners()) {
                   if (learnerId != nodeId) {
                      ConnectionInfo learnerConnection = learnersOutwardConnections.get(learnerId);
                      learnerConnection.send_queue.transfer(m);
                   }
                }
-               learnersSuccessorConnection.send_queue.transfer(m);
+               if (learnersSuccessorConnection == null) {
+                  logger.info("FastNetworkManager learnersSuccessorConnection == null");
+               }               
+               else {
+                  logger.info("FastNetworkManager learnersSuccessorConnection != null");
+                  if (learnersSuccessorConnection.send_queue == null) 
+                     logger.info("FastNetworkManager learnersSuccessorConnection.send_queue == null");
+                  else {
+                     logger.info("FastNetworkManager learnersSuccessorConnection.send_queue != null");
+                     learnersSuccessorConnection.send_queue.transfer(m);
+                  }
+                     
+               }
             }
          }
          else {
@@ -130,9 +146,9 @@ public class FastNetworkManager extends NetworkManager {
          if (learnerConnection != null) {
             learnerConnection.channel.close();
             learnerConnection.send_queue.clear();
-            logger.debug("FastNetworkManager closed connection to learner " + learnerId);
+            logger.info("FastNetworkManager closed connection to learner " + learnerId);
          } else {
-            logger.debug("FastNetworkManager couldn't close connection to learner " + learnerId + " (not found in connections map).");
+            logger.info("FastNetworkManager couldn't close connection to learner " + learnerId + " (not found in connections map).");
          }
       } catch (IOException e) {
          e.printStackTrace();
@@ -179,6 +195,7 @@ public class FastNetworkManager extends NetworkManager {
    }
    
    public ConnectionInfo createConnection(InetSocketAddress addr, TransferQueue<Message> sendQueue) {
+      logger.info("FastNetworkManager creating connection with sendQueue " + (sendQueue == null ? "== null" : "!= null"));
       SocketChannel newChannel = null;
       try {
          newChannel = SocketChannel.open();
@@ -191,9 +208,9 @@ public class FastNetworkManager extends NetworkManager {
          Thread t = new Thread(new TCPSender(this,newChannel,sendQueue));
          t.setName("TCPSender");
          t.start();
-         logger.debug("NetworkManager create connection " + addr + " (" + newChannel.getLocalAddress() + ")");
+         logger.info("FastNetworkManager create connection " + addr + " (" + newChannel.getLocalAddress() + ")");
       } catch (IOException e) {
-         logger.error("NetworkManager client connect error",e);
+         logger.error("FastNetworkManager client connect error",e);
       }
       return new ConnectionInfo(newChannel, sendQueue);
    }

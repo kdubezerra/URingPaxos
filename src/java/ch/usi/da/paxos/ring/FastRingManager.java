@@ -83,45 +83,58 @@ public class FastRingManager extends RingManager {
    
    @Override
    protected synchronized void notifyRingChanged(){
-      FastNetworkManager fnetwork = (FastNetworkManager) network;
-
       // traditional ring-paxos successos
       InetSocketAddress successorAddr = getNodeAddress(getRingSuccessor(nodeID));
-      logger.info("FastRingManager ring " + topologyID + " changed: " + nodes + " (succsessor: " + getRingSuccessor(nodeID) + " at " + successorAddr + ")");
+      logger.info("FastRingManager ring " + topologyID + " changed: " + nodes + " (successor: " + getRingSuccessor(nodeID) + " at " + successorAddr + ")");
+
       if(successorAddr != null && currentConnection == null || !currentConnection.equals(successorAddr)){
          /* give node time to start (zookeeper is fast!) */
-         try { Thread.sleep(1000);} catch (InterruptedException e) { }
+         try { Thread.sleep(1000); } catch (InterruptedException e) { }
          network.disconnectClient();
          network.connectClient(successorAddr);
          currentConnection = successorAddr;
       }
-            
+
+   }
+   
+   @Override
+   protected synchronized void notifyLearnersChanged() {
+      System.out.println("Called FastRingManager.notifyLearnersChanged()");
+      logger.info("FastRingManager ring " + topologyID + "'s new learners: " + learners);
+      FastNetworkManager fnetwork = (FastNetworkManager) network;
+
       /* give learners time to start (zookeeper is fast!) */
-      try { Thread.sleep(1000);} catch (InterruptedException e) { }
-      
+      try { Thread.sleep(1000); } catch (InterruptedException e) { }
+
       // update connections to all learners
-      Set<Integer> newLearnerSet   = new HashSet<Integer>(learners);
+      Set<Integer> newLearnerSet = new HashSet<Integer>(learners);
       Set<Integer> learnersRemoved = new HashSet<Integer>(previousLearners);
       learnersRemoved.removeAll(newLearnerSet);
       previousLearners.clear();
       previousLearners.addAll(newLearnerSet);
       Collections.sort(previousLearners);
-      
+
       for (int removedLearnerId : learnersRemoved)
          if (removedLearnerId != nodeID)
             fnetwork.removeLearnerConnection(removedLearnerId);
-      
+
       for (int learnerId : learners)
          if (learnerId != nodeID)
             fnetwork.ensureLearnerConnection(learnerId, getNodeAddress(learnerId));
-      
-      
+
       // create special connection to the node that succeeds all learners
-      // (making sure that there is at least one learner and that there is at least one non-learner)
-      if (learners.isEmpty() == false) {
+      // (making sure that the local node is a learner and that there is at
+      // least one non-learner)
+      if (localNodeIsLearner()) {
          successorOfAllLearners = getRingSuccessor(getLastLearner());
-         if (learners.contains(successorOfAllLearners) == false)
+         System.out.println("Local node " + nodeID + " is a learner. Successor of all learners is node " + successorOfAllLearners);
+         logger.info("Local node " + nodeID + " is a learner. Successor of all learners is node " + successorOfAllLearners);
+         if (learners.contains(successorOfAllLearners) == false) {
+            logger.info("Local learner " + nodeID + " connecting to learnersSuccessor " + successorOfAllLearners);
             fnetwork.ensureLearnersSuccessorConnection(successorOfAllLearners, getNodeAddress(successorOfAllLearners));
+         } else {
+            logger.info("Local node " + nodeID + " thinks successor " + successorOfAllLearners + " is a learner too.");
+         }
       }
    }
    
@@ -150,4 +163,5 @@ public class FastRingManager extends RingManager {
       int bcasterId    = learners.get(bcasterIndex);
       return bcasterId;
    }
+   
 }
