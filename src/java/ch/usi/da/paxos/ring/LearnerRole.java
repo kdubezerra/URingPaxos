@@ -166,6 +166,7 @@ public class LearnerRole extends Role implements Learner {
 	}
 	
 	public void deliver(RingManager fromRing,Message m){
+	   System.out.println("learner delivered: " + ring.getNodeID() + " received " + m);
 		/*if(logger.isDebugEnabled()){
 			logger.debug("learner " + ring.getNodeID() + " received " + m);
 		}*/

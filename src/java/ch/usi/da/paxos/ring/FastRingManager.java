@@ -152,6 +152,10 @@ public class FastRingManager extends RingManager {
       return learners.get(learners.size() - 1);
    }
    
+   public int getSuccessorOfAllLearners() {
+      return successorOfAllLearners;
+   }
+   
    public int getBroadcasterLearnerId(long instanceId) {
       int bcasterIndex = (int) (instanceId % (long) learners.size());
       int bcasterId    = learners.get(bcasterIndex);

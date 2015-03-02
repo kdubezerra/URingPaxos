@@ -50,7 +50,7 @@ public class NetworkManager {
 	
 	private final static Logger logger = Logger.getLogger(NetworkManager.class);
 
-	private final static Logger stats = Logger.getLogger("ch.usi.da.paxos.Stats");
+	protected final static Logger stats = Logger.getLogger("ch.usi.da.paxos.Stats");
 
 	protected final RingManager ring;
 	
@@ -62,13 +62,13 @@ public class NetworkManager {
 	
 	protected final TransferQueue<Message> send_queue = new LinkedTransferQueue<Message>();
 	
-	private Role acceptor = null;
+	protected Role acceptor = null;
 
-	private Role leader = null;
+	protected Role leader = null;
 
-	private Role learner = null;
+	protected Role learner = null;
 
-	private Role proposer = null;
+	protected Role proposer = null;
 
 	protected boolean tcp_nodelay = false;
 	

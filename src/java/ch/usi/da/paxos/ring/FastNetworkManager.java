@@ -29,7 +29,9 @@ import java.util.concurrent.TransferQueue;
 
 import org.apache.log4j.Logger;
 
+import ch.usi.da.paxos.api.PaxosRole;
 import ch.usi.da.paxos.message.Message;
+import ch.usi.da.paxos.message.MessageType;
 
 
 /**
@@ -71,10 +73,133 @@ public class FastNetworkManager extends NetworkManager {
    }
    
    /**
+    * Called from the server listener when a packet arrives
+    * 
+    * @param m the received message
+    */
+   public synchronized void receive(Message m){
+      /*if(logger.isDebugEnabled()){
+         logger.debug("receive network message (ring:" + ring.getRingID() + ") : " + m);
+      }*/
+
+      /*if(random.nextInt(100) == 1){
+         logger.debug("!! drop: " + m);
+         return;
+      }*/
+      
+      if(stats.isDebugEnabled()){
+         messages_distribution[m.getType().getId()]++;
+         messages_size[m.getType().getId()] = messages_size[m.getType().getId()] + Message.length(m);
+      }
+      
+      // network forwarding
+      if(m.getType() == MessageType.Relearn || m.getType() == MessageType.Latency){
+         if(leader == null){
+            send(m);
+         }
+      }else if(m.getType() == MessageType.Value){
+         send(m, false); // D,v -> until predecessor(P0)
+      }else if(m.getType() == MessageType.Phase2){
+         if(acceptor == null && ring.getNodeID() != ring.getLastAcceptor()){ // network -> until last_accept
+            send(m);
+         }  
+      }else if(m.getType() == MessageType.Decision){
+         send(m, false); // network -> predecessor(deciding acceptor)
+      }else if(m.getType() == MessageType.Phase1 || m.getType() == MessageType.Phase1Range){
+         if(m.getReceiver() == PaxosRole.Leader){
+            if(leader == null){
+               send(m);
+            }
+         }else if(m.getReceiver() == PaxosRole.Acceptor){
+            if(acceptor == null){
+               send(m);
+            }
+         }
+      }else if(m.getType() == MessageType.Safe){
+         if(learner == null && ring.getNodeID() != ring.getCoordinatorID()){ // network -> until coordinator
+            send(m);
+         }  
+      }else if(m.getType() == MessageType.Trim){
+         if(acceptor == null && ring.getNodeID() != ring.getCoordinatorID()){ // network -> until coordinator
+            send(m);
+         }           
+      }
+
+      // local delivery
+      if(m.getType() == MessageType.Relearn || m.getType() == MessageType.Latency){
+         if(leader != null){
+            leader.deliver(ring,m);
+         }
+      }else if(m.getType() == MessageType.Value){
+         if(learner != null){
+            learner.deliver(ring,m);
+         }
+         if(acceptor != null){
+            acceptor.deliver(ring,m);
+         }
+         if(leader != null){
+            leader.deliver(ring,m);
+         }
+      }else if(m.getType() == MessageType.Phase2){
+         if(learner != null){
+            learner.deliver(ring,m);
+         }        
+         if(acceptor != null){
+            acceptor.deliver(ring,m);
+         }  
+      }else if(m.getType() == MessageType.Decision){
+         if(leader != null){
+            leader.deliver(ring,m);
+         }
+         if(acceptor != null){
+            acceptor.deliver(ring,m);
+         }
+         if(learner != null){
+            learner.deliver(ring,m);
+         }        
+         if(proposer != null){
+            proposer.deliver(ring,m);
+         }
+      }else if(m.getType() == MessageType.Phase1 || m.getType() == MessageType.Phase1Range){
+         if(m.getReceiver() == PaxosRole.Leader){
+            if(leader != null){
+               leader.deliver(ring,m);
+            }
+         }else if(m.getReceiver() == PaxosRole.Acceptor){
+            if(acceptor != null){
+               acceptor.deliver(ring,m);
+            }
+         }
+      }else if(m.getType() == MessageType.Safe){
+         if(leader != null){
+            leader.deliver(ring,m);
+         }else if(learner != null){
+            learner.deliver(ring,m);
+         }
+      }else if(m.getType() == MessageType.Trim){
+         if(learner != null){
+            learner.deliver(ring,m);
+         }
+         if(leader != null){
+            leader.deliver(ring,m);
+         }else if(acceptor != null){
+            acceptor.deliver(ring,m);
+         }
+      }
+   }
+
+   /**
     * @param m the message to send
     */
    @Override
-   public void send(Message m){
+   public void send(Message m) {
+      send(m, true);
+   }
+   
+   /**
+    * @param m the message to send
+    */
+   public void send(Message m, boolean sendToSender){
       try {
 
          FastRingManager fring = (FastRingManager) ring;
@@ -91,27 +216,29 @@ public class FastNetworkManager extends NetworkManager {
             // get the broadcasting learner, rotating the instance id among the learners
             int bcasterLearnerId = fring.getBroadcasterLearnerId(instanceId);
             ConnectionInfo bcasterLearnerConnection = learnersOutwardConnections.get(bcasterLearnerId);
-            logger.info(String.format("FastNetworkManager last acceptor sending to broadcast-learner %d: %s", bcasterLearnerId, m));
-            bcasterLearnerConnection.send_queue.transfer(m);
+//            logger.info(String.format("FastNetworkManager last acceptor sending to broadcast-learner %d: %s", bcasterLearnerId, m));
+            if (sendToSender || bcasterLearnerId != m.getSender())
+               bcasterLearnerConnection.send_queue.transfer(m);
          }
          else if (fring.localNodeIsLearner()) {
             // if this is the bcasting learner, bcast to learners (except itself) and learnersSuccessor
             // otherwise, do nothing
             if (nodeId == fring.getBroadcasterLearnerId(instanceId)) {
                for (int learnerId : fring.getLearners()) {
-                  if (learnerId != nodeId) {
-                     logger.info(String.format("FastNetworkManager learner %d broadcasting to learner %d: %s", nodeId, learnerId, m));
+                  if (learnerId != nodeId && (sendToSender || learnerId != m.getSender())) {
+//                     logger.info(String.format("FastNetworkManager learner %d broadcasting to learner %d: %s", nodeId, learnerId, m));
                      ConnectionInfo learnerConnection = learnersOutwardConnections.get(learnerId);
                      learnerConnection.send_queue.transfer(m);
                   }
                }
-               if (learnersSuccessorConnection != null)
-                     learnersSuccessorConnection.send_queue.transfer(m);
+               if (learnersSuccessorConnection != null && (sendToSender || fring.getSuccessorOfAllLearners() != m.getSender()))
+                  learnersSuccessorConnection.send_queue.transfer(m);
             }
          }
          else {
             // this not a learner, nor the last acceptor, so follow standard protocol
-            send_queue.transfer(m); // (blocking call)
+            if (sendToSender || m.getSender() != fring.getRingSuccessor(nodeId))
+               send_queue.transfer(m); // (blocking call)
          }
       } catch (InterruptedException e) {
       }
