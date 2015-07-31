@@ -146,9 +146,6 @@ public class MultiLearnerRole extends Role implements Learner {
 						}catch (NumberFormatException e) {
 							logger.error("MultiRingLearner received incomplete SKIP message! -> " + d,e);
 						}
-						if(deliver_skip_messages){
-							values.add(d);
-						}
 					}else{
 						count++;
 						// learning an actual proposed value
