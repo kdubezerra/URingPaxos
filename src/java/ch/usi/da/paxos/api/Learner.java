@@ -34,6 +34,14 @@ import ch.usi.da.paxos.storage.Decision;
 public interface Learner {
 	public BlockingQueue<Decision> getDecisions();
 	
+	public Decision getNextDecision();
+
 	public void setSafeInstance(Integer ring,Long instance);
-	public void provideLearnerCheckpoint(LearnerCheckpoint checkpoint);
+	
+   public void provideLearnerCheckpoint(LearnerCheckpoint checkpoint);
+   
+	public LearnerCheckpoint createCheckpointObject(LearnerDeliveryMetadata metadata);
+
+   public LearnerDeliveryMetadata getLastDeliveryMetadata();
+   
 }

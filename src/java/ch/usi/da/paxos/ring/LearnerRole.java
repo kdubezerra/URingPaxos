@@ -29,6 +29,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.Semaphore;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.log4j.Logger;
@@ -36,6 +37,7 @@ import org.apache.log4j.Logger;
 import ch.usi.da.paxos.api.ConfigKey;
 import ch.usi.da.paxos.api.Learner;
 import ch.usi.da.paxos.api.LearnerCheckpoint;
+import ch.usi.da.paxos.api.LearnerDeliveryMetadata;
 import ch.usi.da.paxos.api.PaxosRole;
 import ch.usi.da.paxos.message.Message;
 import ch.usi.da.paxos.message.MessageType;
@@ -98,6 +100,17 @@ public class LearnerRole extends Role implements Learner {
 	private final int median_window = 1000;
 
 	private DescriptiveStatistics latencies = new DescriptiveStatistics(median_window);
+
+	private Semaphore sem_checkpoint = new Semaphore(0);
+	private boolean waiting_for_checkpoint = true;
+	private boolean consumed_all_checkpointed_values = true;
+	private long    checkpointed_instanceId = 0; // first instance is 1
+	private long    checkpointed_instance_value_count = 0; // first value count in instance is 1
+	private long    toSkip = 0;
+	private long    ring_delivered_values = 0; // first value count in ring is 1
+	private long    instance_delivered_values = 0;
+	private long    last_delivered_instance = 0;
+	
 
 	/**
 	 * @param ring
@@ -277,6 +290,116 @@ public class LearnerRole extends Role implements Learner {
 		return values;
 	}
 	
+	@Override
+	public Decision getNextDecision() {
+	   
+	   waitForCheckpointIfRecovering();
+	   
+	   consumeAllCheckpointedDecisionsIfAny();
+	   
+	   Decision retval = null;
+	   instance_delivered_values++;
+	   ring_delivered_values++;
+	   
+      if (toSkip > 0) {
+         
+         toSkip--;
+         retval = Decision.SKIP;
+         
+      } else {
+         
+         Decision d = null;
+         try {
+            d = values.take();
+         } catch (InterruptedException e) {
+            e.printStackTrace();
+            System.exit(1);
+         }
+         
+         if (d.getInstance() != last_delivered_instance) {
+            last_delivered_instance = d.getInstance();
+            instance_delivered_values = 1;
+         }
+         
+         if(d.isSkip()){
+            long skips = d.getNumberOfSkips();
+            toSkip = skips - 1;
+            retval = Decision.SKIP;
+         }
+         else {
+            d.setInstanceValueCounter(instance_delivered_values);
+            d.setRingValueCounter(ring_delivered_values);
+            retval = d;
+         }
+         
+      }
+	   return retval;
+	}
+	
+   private void consumeAllCheckpointedDecisionsIfAny() {
+
+      // consume all values until the last checkpointed value, which is also consumed
+      if (consumed_all_checkpointed_values == false) {
+
+         try {
+
+            Decision d = values.take();
+
+            if (d.getInstance() > checkpointed_instanceId) {
+               logger.error("LearnerRole checkpoint too old. Gap in decision sequence!");
+               System.exit(1);
+            }
+            while (d.getInstance() < checkpointed_instanceId) {
+               d = values.take();
+            }
+            if (d.getInstance() == checkpointed_instanceId) {
+
+               long values_to_consume = checkpointed_instance_value_count;
+
+               if (d.isSkip()) { // if instance is a skip
+                  toSkip = d.getNumberOfSkips() - values_to_consume;
+
+                  if (toSkip < 0) {
+                     logger.error(String
+                           .format(
+                                 "Checkpoint tells to consume more values (%d) from instance %d than the instance actually contains (%d)",
+                                 values_to_consume, d.getInstance(),
+                                 d.getNumberOfSkips()));
+                     System.exit(1);
+                  }
+
+               }
+
+               else { // if instance is not skip
+                  while (values_to_consume > 0) {
+
+                     d = values.take();
+                     values_to_consume--;
+
+                     if (d.getInstance() > checkpointed_instanceId) {
+                        logger.error(String
+                              .format(
+                                    "Checkpointed instance value count %d is not in checkpointed instance %d, but in instance %d!",
+                                    checkpointed_instance_value_count,
+                                    checkpointed_instanceId, d.getInstance()));
+                        System.exit(1);
+                     }
+
+                  }
+               }
+
+               consumed_all_checkpointed_values = true;
+
+            }
+
+         } catch (InterruptedException e) {
+            e.printStackTrace();
+            System.exit(1);
+         }
+
+      }
+   }
+	
 	public Map<String, Value> getLearned(){
 		return Collections.unmodifiableMap(learned);
 	}
@@ -306,6 +429,48 @@ public class LearnerRole extends Role implements Learner {
 	}
 
    @Override
-   public void provideLearnerCheckpoint(LearnerCheckpoint checkpoint) {
+   public void provideLearnerCheckpoint(LearnerCheckpoint cp) {
+      if (cp == null)
+         consumed_all_checkpointed_values = true;
+      else {
+         LearnerRoleCheckpoint checkpoint = (LearnerRoleCheckpoint) cp;
+         
+         checkpointed_instanceId = last_delivered_instance = checkpoint.checkpointed_instanceId;
+         checkpointed_instance_value_count = instance_delivered_values = checkpoint.checkpointed_instance_value_count;
+         ring_delivered_values = checkpoint.checkpointed_ring_value_count;
+         
+         if (last_delivered_instance == 0 && instance_delivered_values == 0 && ring_delivered_values == 0 && toSkip == 0)
+            consumed_all_checkpointed_values = true;
+         else
+            consumed_all_checkpointed_values = false;
+      }
+      
+      waiting_for_checkpoint = false;
+      sem_checkpoint.release();
+   }
+   
+   private void waitForCheckpointIfRecovering() {
+      while(waiting_for_checkpoint) {
+         sem_checkpoint.acquireUninterruptibly();
+      }
+   }
+
+   @Override
+   public LearnerCheckpoint createCheckpointObject(LearnerDeliveryMetadata md) {
+      LearnerRoleDeliveryMetadata metadata = (LearnerRoleDeliveryMetadata) md;
+      LearnerRoleCheckpoint cp = new LearnerRoleCheckpoint();
+      cp.checkpointed_instanceId = metadata.instanceId;
+      cp.checkpointed_instance_value_count = metadata.instanceValueCount;
+      cp.checkpointed_ring_value_count = metadata.ringValueCount;
+      return cp;
+   }
+
+   @Override
+   public LearnerDeliveryMetadata getLastDeliveryMetadata() {
+      LearnerRoleDeliveryMetadata lastDeliveryMetadata = new LearnerRoleDeliveryMetadata();
+      lastDeliveryMetadata.instanceId         = last_delivered_instance;
+      lastDeliveryMetadata.instanceValueCount = instance_delivered_values;
+      lastDeliveryMetadata.ringValueCount     = ring_delivered_values;
+      return lastDeliveryMetadata;
    }
 }

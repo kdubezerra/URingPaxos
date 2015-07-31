@@ -34,6 +34,8 @@ import ch.usi.da.paxos.message.Value;
 public class Decision implements Serializable {
 	
 	private static final long serialVersionUID = -2916694736282875646L;
+	
+	public static final Decision SKIP = new Decision(null, null, null, null);
 
 	private final Integer ring;
 	
@@ -43,7 +45,9 @@ public class Decision implements Serializable {
 	
 	private final Value value;
 	
-	private long  valueCounterOfFirstValueInRing = -1;
+	private long  valueCounterOfFirstValueInRing = -1; // starts at 1 in the ring
+	
+	private long  valueCounterInInstance = -1; // starts at 1 in the instance
 	
 	/**
 	 * @param ring
@@ -86,6 +90,14 @@ public class Decision implements Serializable {
 		return value;
 	}
 	
+	public void setInstanceValueCounter(long v) {
+	   this.valueCounterInInstance = v;
+	}
+	
+   public long getInstanceValueCounter() {
+      return this.valueCounterInInstance;
+   }
+	
 	/** Sets the value counter of the first value contained in this instance, no matter
 	 *  how many values were decided together, with regards to the ring where it was
 	 *  decided. For example, if the first value of this Decision is the <b>i-th</b>
@@ -108,6 +120,22 @@ public class Decision implements Serializable {
 	 */
 	public long getRingValueCounter() {
 	   return this.valueCounterOfFirstValueInRing;
+	}
+	
+	public boolean isSkip() {
+	   return this == Decision.SKIP || this.getValue().isSkip();
+	}
+	
+	public long getNumberOfSkips() {
+	   long skips = 0;
+	   if (isSkip()) {
+         skips = Long.parseLong(new String(getValue().getValue()));
+	   }
+	   else {
+         System.err.println("Decision is not a skip!");
+         System.exit(1);
+	   }
+	   return skips;
 	}
 	
 	public String toString(){

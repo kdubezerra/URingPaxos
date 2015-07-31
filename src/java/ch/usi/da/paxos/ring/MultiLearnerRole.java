@@ -27,6 +27,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.Semaphore;
 
 import org.apache.commons.lang.mutable.MutableInt;
 import org.apache.log4j.Logger;
@@ -34,6 +35,7 @@ import org.apache.log4j.Logger;
 import ch.usi.da.paxos.api.ConfigKey;
 import ch.usi.da.paxos.api.Learner;
 import ch.usi.da.paxos.api.LearnerCheckpoint;
+import ch.usi.da.paxos.api.LearnerDeliveryMetadata;
 import ch.usi.da.paxos.api.PaxosRole;
 import ch.usi.da.paxos.message.Message;
 import ch.usi.da.paxos.message.MessageType;
@@ -51,117 +53,103 @@ import ch.usi.da.paxos.storage.Decision;
  */
 public class MultiLearnerRole extends Role implements Learner {
 
-	private final static Logger logger = Logger.getLogger(MultiLearnerRole.class);
-	
-	private final Map<Integer,RingDescription> ringmap = new HashMap<Integer,RingDescription>();
-	
-	private final List<Integer> ring = new ArrayList<Integer>();
-	
-	private final int maxRing = 20;
-	
-	private final BlockingQueue<Decision> values = new LinkedBlockingQueue<Decision>(); 
-	
-	private final LearnerRole[] learner = new LearnerRole[maxRing];
-	
-	private int M = 1;
-		
-	private int deliverRing;
-	
-	private int referenceRing = 0;
+   private final static Logger logger = Logger.getLogger(MultiLearnerRole.class);
+   
+   private final Map<Integer,RingDescription> ringmap = new HashMap<Integer,RingDescription>();
+   
+   private final List<Integer> ring = new ArrayList<Integer>();
+   
+   private final int maxRing = 20;
+   
+   private final BlockingQueue<Decision> values = new LinkedBlockingQueue<Decision>(); 
+   
+   private final LearnerRole[] learner = new LearnerRole[maxRing];
+   
+   private int M = 1;
+      
+   private int deliverRing;
+   
+   private int referenceRing = 0;
 
-	private final long[] skip_count = new long[maxRing];
-	
-	private final long[] total_values = new long[maxRing]; // 1..Long.MAX_VALUE
-	
-	private final long[] latency = new long[maxRing];
-	
-	private boolean deliver_skip_messages = false;
+   private final long[] skip_count = new long[maxRing];
+   
+   private final long[] latency = new long[maxRing];
+   
+   private boolean deliver_skip_messages = false;
+   
+   private long multiring_delivered_values = 0;
+   private boolean waitingForCheckpoint = true;
+   private Semaphore sem_waitingForCheckpoint = new Semaphore(0);
 
-	/**
-	 * @param rings a list of rings
-	 */
-	public MultiLearnerRole(List<RingDescription> rings) {
-		int minRing = maxRing+1;
-		for(RingDescription ring : rings){
-			if(ring.getRingID() < minRing){
-				minRing = ring.getRingID();
-			}
-			this.ring.add(ring.getRingID());
-			this.ringmap.put(ring.getRingID(),ring);
-		}
-		Collections.sort(ring);
-		RingManager firstRing = rings.get(0).getRingManager();
-		deliverRing = minRing;
-		logger.debug("MultiRingLearner initial deliverRing=" + deliverRing);
-		if(firstRing.getConfiguration().containsKey(ConfigKey.multi_ring_m)){
-			M = Integer.parseInt(firstRing.getConfiguration().get(ConfigKey.multi_ring_m));
-			logger.info("MultiRingLearner M=" + M);
-		}
-		if(firstRing.getConfiguration().containsKey(ConfigKey.deliver_skip_messages)){
-			if(firstRing.getConfiguration().get(ConfigKey.deliver_skip_messages).contains("1")){
-				deliver_skip_messages = true;
-			}
-			logger.info("MultiRingLearner deliver_skip_messages: " + (deliver_skip_messages ? "enabled" : "disabled"));
-		}
-		if(firstRing.getConfiguration().containsKey(ConfigKey.reference_ring)){
-			referenceRing = Integer.parseInt(firstRing.getConfiguration().get(ConfigKey.reference_ring));
-			logger.info("MultiRingLearner reference ring=" + referenceRing);
-		}
-	}
+   /**
+    * @param rings a list of rings
+    */
+   public MultiLearnerRole(List<RingDescription> rings) {
+      int minRing = maxRing+1;
+      for(RingDescription ring : rings){
+         if(ring.getRingID() < minRing){
+            minRing = ring.getRingID();
+         }
+         this.ring.add(ring.getRingID());
+         this.ringmap.put(ring.getRingID(),ring);
+      }
+      Collections.sort(ring);
+      RingManager firstRing = rings.get(0).getRingManager();
+      deliverRing = minRing;
+      logger.debug("MultiRingLearner initial deliverRing=" + deliverRing);
+      if(firstRing.getConfiguration().containsKey(ConfigKey.multi_ring_m)){
+         M = Integer.parseInt(firstRing.getConfiguration().get(ConfigKey.multi_ring_m));
+         logger.info("MultiRingLearner M=" + M);
+      }
+      if(firstRing.getConfiguration().containsKey(ConfigKey.deliver_skip_messages)){
+         if(firstRing.getConfiguration().get(ConfigKey.deliver_skip_messages).contains("1")){
+            deliver_skip_messages = true;
+         }
+         logger.info("MultiRingLearner deliver_skip_messages: " + (deliver_skip_messages ? "enabled" : "disabled"));
+      }
+      if(firstRing.getConfiguration().containsKey(ConfigKey.reference_ring)){
+         referenceRing = Integer.parseInt(firstRing.getConfiguration().get(ConfigKey.reference_ring));
+         logger.info("MultiRingLearner reference ring=" + referenceRing);
+      }
+   }
 
-	@Override
-	public void run() {
-		CountDownLatch latch = new CountDownLatch(ringmap.size());
-		for(Entry<Integer,RingDescription> e : ringmap.entrySet()){
-			// create learners
-			RingManager ring = e.getValue().getRingManager();
-			Role r = new LearnerRole(ring, latch);
-			learner[e.getKey()] = (LearnerRole) r;
-			logger.debug("MultiRingLeaner register role: " + PaxosRole.Learner + " at node " + ring.getNodeID() + " in ring " + ring.getRingID());
-			ring.registerRole(PaxosRole.Learner);		
-			Thread t = new Thread(r);
-			t.setName(PaxosRole.Learner + "-" + e.getKey());
-			t.start();
-			skip_count[e.getKey()] = 0;
-		}
-		try {
-			latch.await(); // wait until all learner are ready
-		} catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
-		}
-		int count = 0;
-		while(true){
-			try{
-				if(skip_count[deliverRing] > 0){
-					count++;
-					skip_count[deliverRing]--;
-					//logger.debug("MultiRingLearner " + ringmap.get(deliverRing).getNodeID() + " ring " + deliverRing + " skiped a value (" + skip_count[deliverRing] + " skips left)");
-				}else{
-					Decision d = learner[deliverRing].getDecisions().take();
-					if(d.getValue() != null && d.getValue().isSkip()){
-						// skip message
-						try {
-							long skip = Long.parseLong(new String(d.getValue().getValue()));
-							skip_count[deliverRing] = skip_count[deliverRing] + skip;
-						}catch (NumberFormatException e) {
-							logger.error("MultiRingLearner received incomplete SKIP message! -> " + d,e);
-						}
-					}else{
-						count++;
-						// learning an actual proposed value
-						values.add(d);
-					}
-				}
-				if(count >= M){
-					count = 0;
-					deliverRing = getRingSuccessor(deliverRing);
-				}
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-				break;				
-			}
-		}
-	}
+   @Override
+   public void run() {
+      CountDownLatch latch = new CountDownLatch(ringmap.size());
+      for(Entry<Integer,RingDescription> e : ringmap.entrySet()){
+         // create learners
+         RingManager ring = e.getValue().getRingManager();
+         Role r = new LearnerRole(ring, latch);
+         learner[e.getKey()] = (LearnerRole) r;
+         logger.debug("MultiRingLeaner register role: " + PaxosRole.Learner + " at node " + ring.getNodeID() + " in ring " + ring.getRingID());
+         ring.registerRole(PaxosRole.Learner);     
+         Thread t = new Thread(r);
+         t.setName(PaxosRole.Learner + "-" + e.getKey());
+         t.start();
+         skip_count[e.getKey()] = 0;
+      }
+      try {
+         latch.await(); // wait until all learner are ready
+      } catch (InterruptedException e) {
+         Thread.currentThread().interrupt();
+      }
+      
+      waitForCheckpoint();
+      
+      while(true){
+         
+         long next_multiring_value_count = ++multiring_delivered_values;
+         deliverRing = getRingForDelivery(next_multiring_value_count);
+         Decision d = learner[deliverRing].getNextDecision();
+         if (d.isSkip()) {
+            continue;
+         }
+         else {
+            values.add(d);
+         }
+         
+      }
+   }
 	
 	void updateLatencies(MutableInt heartbeat) {
       if(learner[referenceRing] != null && deliverRing != referenceRing){
@@ -184,7 +172,7 @@ public class MultiLearnerRole extends Role implements Learner {
       latency[deliverRing] = learner[deliverRing].latency_to_coordinator;
 	}
 
-	private int getRingSuccessor(int id){
+	public int getRingSuccessor(int id){
 		int pos = ring.indexOf(new Integer(id));
 		if(pos+1 >= ring.size()){
 			return ring.get(0);
@@ -192,6 +180,11 @@ public class MultiLearnerRole extends Role implements Learner {
 			return ring.get(pos+1);
 		}
 	}
+	
+   int getRingForDelivery(long deliveryIndex) {
+      long ringId = ((deliveryIndex - 1) % (M * ring.size())) / M;
+      return (int) ringId;
+   }
 
 	@Override
 	public BlockingQueue<Decision> getDecisions() {
@@ -205,19 +198,72 @@ public class MultiLearnerRole extends Role implements Learner {
 
    @Override
    public void provideLearnerCheckpoint(LearnerCheckpoint cp) {
-      // TODO
-      MultiLearnerRoleCheckpoint checkpoint = (MultiLearnerRoleCheckpoint) cp;
-      // 1: install the checkpoint
       
-      // 2: signal that checkpoint was provided (and assume that the checkpoint was recent enough)
+      if (cp == null) {
+         
+         for(Entry<Integer,RingDescription> e : ringmap.entrySet()){
+            learner[e.getKey()].provideLearnerCheckpoint(null);
+         }
+         
+      }
+      
+      else {
+      
+         // TODO
+         // 1: install the checkpoint
+         MultiLearnerRoleCheckpoint checkpoint = (MultiLearnerRoleCheckpoint) cp;
+         multiring_delivered_values = checkpoint.getTotalDeliveries();
+         for(int ringId : ringmap.keySet()) {
+            learner[ringId].provideLearnerCheckpoint(checkpoint.getLearnerCheckpoint(ringId));
+         }
+         
+         // 2: signal that the checkpoint was provided (and assume that the checkpoint was recent enough)
+         signalCheckpointReceived();
+      
+      }
    }
    
-   /**
-    * @return count
-    */
-   public int waitForCheckpoint() {
-      // TODO
-      return 0;
+   private void waitForCheckpoint() {
+      while (waitingForCheckpoint) {
+         sem_waitingForCheckpoint.acquireUninterruptibly();
+      }
+   }
+   
+   private void signalCheckpointReceived() {
+      waitingForCheckpoint = false;
+      sem_waitingForCheckpoint.release();
+   }
+
+   @Override
+   public Decision getNextDecision() {
+      Decision d = null;
+      try {
+         d = values.take();
+      } catch (InterruptedException e) {
+         e.printStackTrace();
+         System.exit(1);
+      }
+      return d;
+   }
+
+   @Override
+   public LearnerCheckpoint createCheckpointObject(LearnerDeliveryMetadata metadata) {
+      MultiLearnerRoleDeliveryMetadata md = (MultiLearnerRoleDeliveryMetadata) metadata;
+      
+      MultiLearnerRoleCheckpoint cp = new MultiLearnerRoleCheckpoint();
+      cp.setTotalDeliveries(md.getTotalDeliveries());
+      for(int ringId : ringmap.keySet())
+         cp.setLearnerCheckpoint(ringId, (LearnerRoleCheckpoint) learner[ringId].createCheckpointObject(md.getDelivery(ringId)));
+      return cp;
+   }
+
+   @Override
+   public LearnerDeliveryMetadata getLastDeliveryMetadata() {
+      MultiLearnerRoleDeliveryMetadata dm = new MultiLearnerRoleDeliveryMetadata();
+      dm.setTotalDeliveries(multiring_delivered_values);
+      for(int ringId : ringmap.keySet())
+         dm.setDelivery(ringId, (LearnerRoleDeliveryMetadata) learner[ringId].getLastDeliveryMetadata());
+      return dm;
    }
 
 }
