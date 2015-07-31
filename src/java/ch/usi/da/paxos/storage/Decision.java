@@ -43,6 +43,8 @@ public class Decision implements Serializable {
 	
 	private final Value value;
 	
+	private long  valueCounterOfFirstValueInRing = -1;
+	
 	/**
 	 * @param ring
 	 * @param instance
@@ -82,6 +84,30 @@ public class Decision implements Serializable {
 	 */
 	public Value getValue() {
 		return value;
+	}
+	
+	/** Sets the value counter of the first value contained in this instance, no matter
+	 *  how many values were decided together, with regards to the ring where it was
+	 *  decided. For example, if the first value of this Decision is the <b>i-th</b>
+	 *  value decided in this ring, it must be set by the MultiLearnerRole as <b>i</i>.
+	 *  The value counter is the one used by the deterministic merge.
+	 * 
+	 * @param v
+	 */
+	public void setRingValueCounter(long v) {
+	   this.valueCounterOfFirstValueInRing = v;
+	}
+	
+   /** Gets the value counter of the first value contained in this instance, no matter
+    *  how many values were decided together, with regards to the ring where it was
+    *  decided. For example, if the first value of this Decision is the <b>i-th</b>
+    *  value decided in this ring, this method returns <b>i</i>. The value counter is
+    *  the one used by the deterministic merge.
+    *  
+	 * @return the counter of the first value contained in this decision.
+	 */
+	public long getRingValueCounter() {
+	   return this.valueCounterOfFirstValueInRing;
 	}
 	
 	public String toString(){

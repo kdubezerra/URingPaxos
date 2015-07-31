@@ -35,4 +35,5 @@ public interface Learner {
 	public BlockingQueue<Decision> getDecisions();
 	
 	public void setSafeInstance(Integer ring,Long instance);
+	public void provideLearnerCheckpoint(LearnerCheckpoint checkpoint);
 }

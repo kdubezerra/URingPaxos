@@ -28,10 +28,12 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import org.apache.commons.lang.mutable.MutableInt;
 import org.apache.log4j.Logger;
 
 import ch.usi.da.paxos.api.ConfigKey;
 import ch.usi.da.paxos.api.Learner;
+import ch.usi.da.paxos.api.LearnerCheckpoint;
 import ch.usi.da.paxos.api.PaxosRole;
 import ch.usi.da.paxos.message.Message;
 import ch.usi.da.paxos.message.MessageType;
@@ -68,6 +70,8 @@ public class MultiLearnerRole extends Role implements Learner {
 	private int referenceRing = 0;
 
 	private final long[] skip_count = new long[maxRing];
+	
+	private final long[] total_values = new long[maxRing]; // 1..Long.MAX_VALUE
 	
 	private final long[] latency = new long[maxRing];
 	
@@ -126,7 +130,7 @@ public class MultiLearnerRole extends Role implements Learner {
 			Thread.currentThread().interrupt();
 		}
 		int count = 0;
-		int hearbeat = 0;
+//		MutableInt heartbeat = new MutableInt(0);
 		while(true){
 			try{
 				if(skip_count[deliverRing] > 0){
@@ -139,24 +143,7 @@ public class MultiLearnerRole extends Role implements Learner {
 						// skip message
 						try {
 							long skip = Long.parseLong(new String(d.getValue().getValue()));
-							if(learner[referenceRing] != null && deliverRing != referenceRing){
-								int ref_lat = learner[referenceRing].latency_to_coordinator;
-								int lat = learner[deliverRing].latency_to_coordinator;
-								int diff = ref_lat - lat;
-								hearbeat++;
-								if(Math.abs(lat - latency[deliverRing]) > 20 || hearbeat > 500){
-									hearbeat = 0;
-									RingManager rm = ringmap.get(deliverRing).getRingManager();
-									Message m = new Message(0,rm.getNodeID(),PaxosRole.Leader,MessageType.Latency,0,0,new Value("LAT",Integer.toString(diff).getBytes()));
-									if(rm.isNodeCoordinator()){
-										rm.getNetwork().getLeader().deliver(rm, m);
-									}else{
-										rm.getNetwork().send(m);
-									}
-									logger.info("MultiRingLearner latency between coordinator/coordinator in ring " + referenceRing + "/" + deliverRing + " is " + diff + " ms");
-								}
-							}
-							latency[deliverRing] = learner[deliverRing].latency_to_coordinator;
+//							updateLatencies(heartbeat);
 							skip_count[deliverRing] = skip_count[deliverRing] + skip;
 						}catch (NumberFormatException e) {
 							logger.error("MultiRingLearner received incomplete SKIP message! -> " + d,e);
@@ -180,6 +167,27 @@ public class MultiLearnerRole extends Role implements Learner {
 			}
 		}
 	}
+	
+	void updateLatencies(MutableInt heartbeat) {
+      if(learner[referenceRing] != null && deliverRing != referenceRing){
+         int ref_lat = learner[referenceRing].latency_to_coordinator;
+         int lat = learner[deliverRing].latency_to_coordinator;
+         int diff = ref_lat - lat;
+         heartbeat.increment();
+         if(Math.abs(lat - latency[deliverRing]) > 20 || heartbeat.compareTo(500) > 0){
+            heartbeat.setValue(0);
+            RingManager rm = ringmap.get(deliverRing).getRingManager();
+            Message m = new Message(0,rm.getNodeID(),PaxosRole.Leader,MessageType.Latency,0,0,new Value("LAT",Integer.toString(diff).getBytes()));
+            if(rm.isNodeCoordinator()){
+               rm.getNetwork().getLeader().deliver(rm, m);
+            }else{
+               rm.getNetwork().send(m);
+            }
+            logger.info("MultiRingLearner latency between coordinator/coordinator in ring " + referenceRing + "/" + deliverRing + " is " + diff + " ms");
+         }
+      }
+      latency[deliverRing] = learner[deliverRing].latency_to_coordinator;
+	}
 
 	private int getRingSuccessor(int id){
 		int pos = ring.indexOf(new Integer(id));
@@ -195,8 +203,26 @@ public class MultiLearnerRole extends Role implements Learner {
 		return values;
 	}
 
+	@Override
 	public void setSafeInstance(Integer ring, Long instance) {
 		learner[ring].setSafeInstance(ring,instance);
 	}
+
+   @Override
+   public void provideLearnerCheckpoint(LearnerCheckpoint cp) {
+      // TODO
+      MultiLearnerRoleCheckpoint checkpoint = (MultiLearnerRoleCheckpoint) cp;
+      // 1: install the checkpoint
+      
+      // 2: signal that checkpoint was provided (and assume that the checkpoint was recent enough)
+   }
+   
+   /**
+    * @return count
+    */
+   public int waitForCheckpoint() {
+      // TODO
+      return 0;
+   }
 
 }
