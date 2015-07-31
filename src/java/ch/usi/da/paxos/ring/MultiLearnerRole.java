@@ -130,7 +130,6 @@ public class MultiLearnerRole extends Role implements Learner {
 			Thread.currentThread().interrupt();
 		}
 		int count = 0;
-//		MutableInt heartbeat = new MutableInt(0);
 		while(true){
 			try{
 				if(skip_count[deliverRing] > 0){
@@ -143,7 +142,6 @@ public class MultiLearnerRole extends Role implements Learner {
 						// skip message
 						try {
 							long skip = Long.parseLong(new String(d.getValue().getValue()));
-//							updateLatencies(heartbeat);
 							skip_count[deliverRing] = skip_count[deliverRing] + skip;
 						}catch (NumberFormatException e) {
 							logger.error("MultiRingLearner received incomplete SKIP message! -> " + d,e);
