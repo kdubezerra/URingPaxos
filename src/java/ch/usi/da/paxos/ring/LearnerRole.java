@@ -456,11 +456,11 @@ public class LearnerRole extends Role implements Learner {
    }
    
    private void waitForCheckpointIfRecovering() {
-      System.out.println("LearnerRole :: waiting for checkpoint...");
       while(waiting_for_checkpoint) {
+         System.out.println("LearnerRole :: waiting for checkpoint...");
          sem_checkpoint.acquireUninterruptibly();
+         System.out.println("LearnerRole :: got checkpoint!");
       }
-      System.out.println("LearnerRole :: got checkpoint!");
    }
 
    @Override

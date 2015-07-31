@@ -80,6 +80,7 @@ public class MultiLearnerRole extends Role implements Learner {
    private long multiring_delivered_values = 0;
    private boolean waitingForCheckpoint = true;
    private Semaphore sem_waitingForCheckpoint = new Semaphore(0);
+   private Semaphore sem_learnersReady = new Semaphore(0);
 
    /**
     * @param rings a list of rings
@@ -133,6 +134,8 @@ public class MultiLearnerRole extends Role implements Learner {
       } catch (InterruptedException e) {
          Thread.currentThread().interrupt();
       }
+      
+      signalAllLearnersReady();
       
       waitForCheckpoint();
       
@@ -199,10 +202,14 @@ public class MultiLearnerRole extends Role implements Learner {
    @Override
    public void provideLearnerCheckpoint(LearnerCheckpoint cp) {
       
+      System.out.println("Waiting for all single-ring LearnerRole objects to be ready to apply checkpoint...");
+      waitForAllLearnersReady();
+      System.out.println("All single-ring LearnerRole ready. Applying checkpoint...");
+      
       if (cp == null) {
          
-         for(Entry<Integer,RingDescription> e : ringmap.entrySet()){
-            learner[e.getKey()].provideLearnerCheckpoint(null);
+         for(int ringId : ringmap.keySet()){
+            learner[ringId].provideLearnerCheckpoint(null);
          }
          
       }
@@ -234,6 +241,14 @@ public class MultiLearnerRole extends Role implements Learner {
    private void signalCheckpointReceived() {
       waitingForCheckpoint = false;
       sem_waitingForCheckpoint.release();
+   }
+   
+   private void waitForAllLearnersReady() {
+      sem_learnersReady.acquireUninterruptibly();
+   }
+   
+   private void signalAllLearnersReady() {
+      sem_learnersReady.release();
    }
 
    @Override
