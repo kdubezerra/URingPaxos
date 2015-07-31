@@ -224,9 +224,11 @@ public class MultiLearnerRole extends Role implements Learner {
    }
    
    private void waitForCheckpoint() {
+      logger.debug("MultiLearnerRole :: waiting for checkpoint...");
       while (waitingForCheckpoint) {
          sem_waitingForCheckpoint.acquireUninterruptibly();
       }
+      logger.debug("MultiLearnerRole :: got checkpoint!");
    }
    
    private void signalCheckpointReceived() {

@@ -346,7 +346,9 @@ public class LearnerRole extends Role implements Learner {
             Decision d = values.take();
 
             if (d.getInstance() > checkpointed_instanceId) {
-               logger.error("LearnerRole checkpoint too old. Gap in decision sequence!");
+               String errString = "LearnerRole checkpoint too old. Gap in decision sequence!";
+//               System.err.println(errString);
+               logger.error(errString);
                System.exit(1);
             }
             while (d.getInstance() < checkpointed_instanceId) {
@@ -360,11 +362,13 @@ public class LearnerRole extends Role implements Learner {
                   toSkip = d.getNumberOfSkips() - values_to_consume;
 
                   if (toSkip < 0) {
-                     logger.error(String
+                     String errString = String
                            .format(
                                  "Checkpoint tells to consume more values (%d) from instance %d than the instance actually contains (%d)",
                                  values_to_consume, d.getInstance(),
-                                 d.getNumberOfSkips()));
+                                 d.getNumberOfSkips());
+//                     System.err.println(errString);
+                     logger.error(errString);
                      System.exit(1);
                   }
 
@@ -377,11 +381,13 @@ public class LearnerRole extends Role implements Learner {
                      values_to_consume--;
 
                      if (d.getInstance() > checkpointed_instanceId) {
-                        logger.error(String
+                        String errString = String
                               .format(
                                     "Checkpointed instance value count %d is not in checkpointed instance %d, but in instance %d!",
                                     checkpointed_instance_value_count,
-                                    checkpointed_instanceId, d.getInstance()));
+                                    checkpointed_instanceId, d.getInstance());
+//                        System.err.println(errString);
+                        logger.error(errString);
                         System.exit(1);
                      }
 
@@ -450,9 +456,11 @@ public class LearnerRole extends Role implements Learner {
    }
    
    private void waitForCheckpointIfRecovering() {
+      System.out.println("LearnerRole :: waiting for checkpoint...");
       while(waiting_for_checkpoint) {
          sem_checkpoint.acquireUninterruptibly();
       }
+      System.out.println("LearnerRole :: got checkpoint!");
    }
 
    @Override
