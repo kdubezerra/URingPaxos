@@ -419,6 +419,12 @@ public class LearnerRole extends Role implements Learner {
 		}
 	}
 	
+	@Override
+	public void setSafeDelivery(LearnerDeliveryMetadata metadata) {
+	   LearnerRoleDeliveryMetadata md = (LearnerRoleDeliveryMetadata) metadata;
+	   setSafeInstance(0, md.instanceId - 1);
+   }
+	
 	private int findPos(long instance) {
 		int pos = 0;
 		Iterator<Decision> i = delivery.iterator();

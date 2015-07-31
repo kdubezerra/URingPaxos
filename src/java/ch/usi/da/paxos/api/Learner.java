@@ -38,6 +38,8 @@ public interface Learner {
 
 	public void setSafeInstance(Integer ring,Long instance);
 	
+	public void setSafeDelivery(LearnerDeliveryMetadata metadata);
+	
    public void provideLearnerCheckpoint(LearnerCheckpoint checkpoint);
    
 	public LearnerCheckpoint createCheckpointObject(LearnerDeliveryMetadata metadata);

@@ -28,4 +28,26 @@ public class MultiLearnerRoleDeliveryMetadata implements LearnerDeliveryMetadata
       individualRingsMetadata.put(ring, ringmd);
    }
 
+   @Override
+   public int compareTo(LearnerDeliveryMetadata o) {
+      MultiLearnerRoleDeliveryMetadata other = (MultiLearnerRoleDeliveryMetadata) o;
+      Long thisDels  = totalDeliveriesMade;
+      Long otherDels = other.totalDeliveriesMade;
+      return thisDels.compareTo(otherDels);
+   }
+   
+   @Override
+   public boolean equals(Object o) {
+      MultiLearnerRoleDeliveryMetadata other = (MultiLearnerRoleDeliveryMetadata) o;
+      return this.compareTo(other) == 0;
+   }
+   
+   @Override
+   public int hashCode() {
+      int hash = 0;
+      for (LearnerRoleDeliveryMetadata lrmd : individualRingsMetadata.values())
+         hash ^= lrmd.hashCode();
+      return hash;
+   }
+
 }

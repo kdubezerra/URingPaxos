@@ -185,8 +185,8 @@ public class MultiLearnerRole extends Role implements Learner {
 	}
 	
    int getRingForDelivery(long deliveryIndex) {
-      long ringId = ((deliveryIndex - 1) % (M * ring.size())) / M;
-      return (int) ringId;
+      int ringIndexInList = (int) (((deliveryIndex - 1) % (M * ring.size())) / M);
+      return ring.get(ringIndexInList);
    }
 
 	@Override
@@ -198,6 +198,14 @@ public class MultiLearnerRole extends Role implements Learner {
 	public void setSafeInstance(Integer ring, Long instance) {
 		learner[ring].setSafeInstance(ring,instance);
 	}
+	
+	@Override
+	public void setSafeDelivery(LearnerDeliveryMetadata metadata) {
+	   MultiLearnerRoleDeliveryMetadata md = (MultiLearnerRoleDeliveryMetadata) metadata;
+      for(int ringId : ringmap.keySet()){
+         learner[ringId].setSafeDelivery(md.getDelivery(ringId));
+      }
+	}
 
    @Override
    public void provideLearnerCheckpoint(LearnerCheckpoint cp) {
@@ -206,36 +214,30 @@ public class MultiLearnerRole extends Role implements Learner {
       waitForAllLearnersReady();
       System.out.println("All single-ring LearnerRole ready. Applying checkpoint...");
       
+      // 1: install the checkpoint
       if (cp == null) {
-         
          for(int ringId : ringmap.keySet()){
             learner[ringId].provideLearnerCheckpoint(null);
          }
-         
       }
-      
       else {
-      
-         // TODO
-         // 1: install the checkpoint
          MultiLearnerRoleCheckpoint checkpoint = (MultiLearnerRoleCheckpoint) cp;
          multiring_delivered_values = checkpoint.getTotalDeliveries();
          for(int ringId : ringmap.keySet()) {
             learner[ringId].provideLearnerCheckpoint(checkpoint.getLearnerCheckpoint(ringId));
          }
-         
-         // 2: signal that the checkpoint was provided (and assume that the checkpoint was recent enough)
-         signalCheckpointReceived();
-      
       }
+      
+      // 2: signal that the checkpoint was provided (and assume that the checkpoint was recent enough)
+      signalCheckpointReceived();
    }
    
    private void waitForCheckpoint() {
-      logger.debug("MultiLearnerRole :: waiting for checkpoint...");
+      System.out.println("MultiLearnerRole :: waiting for checkpoint...");
       while (waitingForCheckpoint) {
          sem_waitingForCheckpoint.acquireUninterruptibly();
       }
-      logger.debug("MultiLearnerRole :: got checkpoint!");
+      System.out.println("MultiLearnerRole :: got checkpoint!");
    }
    
    private void signalCheckpointReceived() {

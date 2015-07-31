@@ -10,4 +10,23 @@ public class LearnerRoleDeliveryMetadata implements LearnerDeliveryMetadata, Ser
    public long instanceId;
    public long instanceValueCount;
    public long ringValueCount;
+   
+   @Override
+   public int compareTo(LearnerDeliveryMetadata o) {
+      LearnerRoleDeliveryMetadata other = (LearnerRoleDeliveryMetadata) o;
+      Long thisRingVals  = ringValueCount;
+      Long otherRingVals = other.ringValueCount;
+      return thisRingVals.compareTo(otherRingVals);
+   }
+   
+   @Override
+   public boolean equals(Object o) {
+      LearnerRoleDeliveryMetadata other = (LearnerRoleDeliveryMetadata) o;
+      return this.compareTo(other) == 0;
+   }
+   
+   @Override
+   public int hashCode() {
+      return (int) (instanceId ^ instanceValueCount ^ ringValueCount);
+   }
 }
