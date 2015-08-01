@@ -3,6 +3,7 @@ package ch.usi.da.paxos.ring;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import ch.usi.da.paxos.api.LearnerDeliveryMetadata;
 
@@ -48,6 +49,15 @@ public class MultiLearnerRoleDeliveryMetadata implements LearnerDeliveryMetadata
       for (LearnerRoleDeliveryMetadata lrmd : individualRingsMetadata.values())
          hash ^= lrmd.hashCode();
       return hash;
+   }
+   
+   @Override
+   public String toString() {
+      String s = "[" + totalDeliveriesMade;
+      for (Entry<Integer, LearnerRoleDeliveryMetadata> e : individualRingsMetadata.entrySet())
+         s += ",(" + e.getKey() + "," + e.getValue() + ")";
+      s += "]";
+      return s;
    }
 
 }

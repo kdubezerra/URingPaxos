@@ -11,6 +11,15 @@ public class LearnerRoleDeliveryMetadata implements LearnerDeliveryMetadata, Ser
    public long instanceValueCount;
    public long ringValueCount;
    
+   public LearnerRoleDeliveryMetadata() {
+   }
+   
+   public LearnerRoleDeliveryMetadata(long iid, long instance_vc, long ring_vc) {
+      this.instanceId = iid;
+      this.instanceValueCount = instance_vc;
+      this.ringValueCount = ring_vc;
+   }
+   
    @Override
    public int compareTo(LearnerDeliveryMetadata o) {
       LearnerRoleDeliveryMetadata other = (LearnerRoleDeliveryMetadata) o;
@@ -28,5 +37,10 @@ public class LearnerRoleDeliveryMetadata implements LearnerDeliveryMetadata, Ser
    @Override
    public int hashCode() {
       return (int) (instanceId ^ instanceValueCount ^ ringValueCount);
+   }
+   
+   @Override
+   public String toString() {
+      return String.format("<%d,%d,%d>", instanceId, instanceValueCount, ringValueCount);
    }
 }

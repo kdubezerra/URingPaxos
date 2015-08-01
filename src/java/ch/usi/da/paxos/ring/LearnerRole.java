@@ -336,6 +336,14 @@ public class LearnerRole extends Role implements Learner {
 	   return retval;
 	}
 	
+	private Decision blockingPeek(BlockingQueue<Decision> queue) {
+	   Decision d = null;
+	   while (d == null) {
+	      d = queue.peek();
+	   }
+	   return d;
+	}
+	
    private void consumeAllCheckpointedDecisionsIfAny() {
 
       // consume all values until the last checkpointed value, which is also consumed
@@ -343,7 +351,7 @@ public class LearnerRole extends Role implements Learner {
 
          try {
 
-            Decision d = values.take();
+            Decision d = blockingPeek(values);
 
             if (d.getInstance() > checkpointed_instanceId) {
                String errString = "LearnerRole checkpoint too old. Gap in decision sequence!";
@@ -352,13 +360,15 @@ public class LearnerRole extends Role implements Learner {
                System.exit(1);
             }
             while (d.getInstance() < checkpointed_instanceId) {
-               d = values.take();
+               values.take();
+               d = blockingPeek(values);
             }
             if (d.getInstance() == checkpointed_instanceId) {
 
                long values_to_consume = checkpointed_instance_value_count;
 
                if (d.isSkip()) { // if instance is a skip
+                  values.take();
                   toSkip = d.getNumberOfSkips() - values_to_consume;
 
                   if (toSkip < 0) {
