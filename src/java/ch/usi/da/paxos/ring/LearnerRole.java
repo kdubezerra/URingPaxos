@@ -36,7 +36,6 @@ import org.apache.log4j.Logger;
 
 import ch.usi.da.paxos.api.ConfigKey;
 import ch.usi.da.paxos.api.Learner;
-import ch.usi.da.paxos.api.LearnerCheckpoint;
 import ch.usi.da.paxos.api.LearnerDeliveryMetadata;
 import ch.usi.da.paxos.api.PaxosRole;
 import ch.usi.da.paxos.message.Message;
@@ -456,16 +455,15 @@ public class LearnerRole extends Role implements Learner {
 	}
 
    @Override
-   public void provideLearnerCheckpoint(LearnerCheckpoint cp) {
+   public void provideLearnerCheckpoint(LearnerDeliveryMetadata cp) {
       if (cp == null)
          consumed_all_checkpointed_values = true;
       else {
-         LearnerRoleCheckpoint checkpoint = (LearnerRoleCheckpoint) cp;
-         LearnerRoleDeliveryMetadata cpmetadata = checkpoint.getDeliveryMetadata();
+         LearnerRoleDeliveryMetadata checkpoint = (LearnerRoleDeliveryMetadata) cp;
          
-         checkpointed_instanceId = last_delivered_instance = cpmetadata.instanceId;
-         checkpointed_instance_value_count = instance_delivered_values = cpmetadata.instanceValueCount;
-         ring_delivered_values = cpmetadata.ringValueCount;
+         checkpointed_instanceId = last_delivered_instance = checkpoint.instanceId;
+         checkpointed_instance_value_count = instance_delivered_values = checkpoint.instanceValueCount;
+         ring_delivered_values = checkpoint.ringValueCount;
          
          if (last_delivered_instance == 0 && instance_delivered_values == 0 && ring_delivered_values == 0 && toSkip == 0)
             consumed_all_checkpointed_values = true;
@@ -483,13 +481,6 @@ public class LearnerRole extends Role implements Learner {
          sem_checkpoint.acquireUninterruptibly();
          System.out.println("LearnerRole :: got checkpoint!");
       }
-   }
-
-   @Override
-   public LearnerCheckpoint createCheckpointObject(LearnerDeliveryMetadata md) {
-      LearnerRoleDeliveryMetadata metadata = (LearnerRoleDeliveryMetadata) md;
-      LearnerRoleCheckpoint cp = new LearnerRoleCheckpoint(metadata);
-      return cp;
    }
 
    @Override

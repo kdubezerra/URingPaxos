@@ -34,7 +34,6 @@ import org.apache.log4j.Logger;
 
 import ch.usi.da.paxos.api.ConfigKey;
 import ch.usi.da.paxos.api.Learner;
-import ch.usi.da.paxos.api.LearnerCheckpoint;
 import ch.usi.da.paxos.api.LearnerDeliveryMetadata;
 import ch.usi.da.paxos.api.PaxosRole;
 import ch.usi.da.paxos.message.Message;
@@ -209,7 +208,7 @@ public class MultiLearnerRole extends Role implements Learner {
 	}
 
    @Override
-   public void provideLearnerCheckpoint(LearnerCheckpoint cp) {
+   public void provideLearnerCheckpoint(LearnerDeliveryMetadata cp) {
       
       System.out.println("Waiting for all single-ring LearnerRole objects to be ready to apply checkpoint...");
       waitForAllLearnersReady();
@@ -222,11 +221,10 @@ public class MultiLearnerRole extends Role implements Learner {
          }
       }
       else {
-         MultiLearnerRoleCheckpoint checkpoint = (MultiLearnerRoleCheckpoint) cp;
-         MultiLearnerRoleDeliveryMetadata cpmetadata = checkpoint.getDeliveryMetadata();
-         multiring_delivered_values = cpmetadata.totalDeliveriesMade;
+         MultiLearnerRoleDeliveryMetadata checkpoint = (MultiLearnerRoleDeliveryMetadata) cp;
+         multiring_delivered_values = checkpoint.totalDeliveriesMade;
          for(int ringId : ringmap.keySet()) {
-            LearnerCheckpoint ringlcp = new LearnerRoleCheckpoint(cpmetadata.getDelivery(ringId));
+            LearnerRoleDeliveryMetadata ringlcp = checkpoint.getDelivery(ringId);
             learner[ringId].provideLearnerCheckpoint(ringlcp);
          }
       }
@@ -266,12 +264,6 @@ public class MultiLearnerRole extends Role implements Learner {
          System.exit(1);
       }
       return d;
-   }
-
-   @Override
-   public LearnerCheckpoint createCheckpointObject(LearnerDeliveryMetadata metadata) {
-      MultiLearnerRoleCheckpoint cp = new MultiLearnerRoleCheckpoint((MultiLearnerRoleDeliveryMetadata) metadata);
-      return cp;
    }
 
    @Override

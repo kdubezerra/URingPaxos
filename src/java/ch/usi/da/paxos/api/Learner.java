@@ -40,10 +40,8 @@ public interface Learner {
 	
 	public void setSafeDelivery(LearnerDeliveryMetadata metadata);
 	
-   public void provideLearnerCheckpoint(LearnerCheckpoint checkpoint);
+   public void provideLearnerCheckpoint(LearnerDeliveryMetadata checkpoint);
    
-	public LearnerCheckpoint createCheckpointObject(LearnerDeliveryMetadata metadata);
-
    public LearnerDeliveryMetadata getLastDeliveryMetadata();
    
 }
