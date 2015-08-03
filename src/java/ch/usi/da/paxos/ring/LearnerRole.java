@@ -461,10 +461,12 @@ public class LearnerRole extends Role implements Learner {
          consumed_all_checkpointed_values = true;
       else {
          LearnerRoleCheckpoint checkpoint = (LearnerRoleCheckpoint) cp;
+         LearnerRoleDeliveryMetadata lrdm = (LearnerRoleDeliveryMetadata) checkpoint.getLearnerDeliveryMetadata();
          
-         checkpointed_instanceId = last_delivered_instance = checkpoint.checkpointed_instanceId;
-         checkpointed_instance_value_count = instance_delivered_values = checkpoint.checkpointed_instance_value_count;
-         ring_delivered_values = checkpoint.checkpointed_ring_value_count;
+         
+         checkpointed_instanceId = last_delivered_instance = lrdm.instanceId;
+         checkpointed_instance_value_count = instance_delivered_values = lrdm.instanceValueCount;
+         ring_delivered_values = lrdm.ringValueCount;
          
          if (last_delivered_instance == 0 && instance_delivered_values == 0 && ring_delivered_values == 0 && toSkip == 0)
             consumed_all_checkpointed_values = true;
@@ -487,15 +489,11 @@ public class LearnerRole extends Role implements Learner {
    @Override
    public LearnerCheckpoint createCheckpointObject(LearnerDeliveryMetadata md) {
       LearnerRoleDeliveryMetadata metadata = (LearnerRoleDeliveryMetadata) md;
-      LearnerRoleCheckpoint cp = new LearnerRoleCheckpoint();
-      cp.checkpointed_instanceId = metadata.instanceId;
-      cp.checkpointed_instance_value_count = metadata.instanceValueCount;
-      cp.checkpointed_ring_value_count = metadata.ringValueCount;
+      LearnerRoleCheckpoint cp = new LearnerRoleCheckpoint(metadata);
       return cp;
    }
 
-   @Override
-   public LearnerDeliveryMetadata getLastDeliveryMetadata() {
+   LearnerDeliveryMetadata getLastDeliveryMetadata() {
       LearnerRoleDeliveryMetadata lastDeliveryMetadata = new LearnerRoleDeliveryMetadata();
       lastDeliveryMetadata.instanceId         = last_delivered_instance;
       lastDeliveryMetadata.instanceValueCount = instance_delivered_values;

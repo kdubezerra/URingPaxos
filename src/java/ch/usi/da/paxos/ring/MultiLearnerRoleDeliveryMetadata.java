@@ -11,7 +11,7 @@ public class MultiLearnerRoleDeliveryMetadata implements LearnerDeliveryMetadata
    private static final long serialVersionUID = -4990900306709619910L;
    
    long totalDeliveriesMade;
-   Map<Integer, LearnerRoleDeliveryMetadata> individualRingsMetadata = new HashMap<Integer, LearnerRoleDeliveryMetadata>();;
+   Map<Integer, LearnerRoleDeliveryMetadata> individualRingsMetadata = new HashMap<Integer, LearnerRoleDeliveryMetadata>();
 
    public long getTotalDeliveries() {
       return totalDeliveriesMade;
@@ -27,6 +27,12 @@ public class MultiLearnerRoleDeliveryMetadata implements LearnerDeliveryMetadata
    
    public void setDelivery(int ring, LearnerRoleDeliveryMetadata ringmd) {
       individualRingsMetadata.put(ring, ringmd);
+   }
+   
+   @Override
+   public boolean precedes(LearnerDeliveryMetadata o) {
+      MultiLearnerRoleDeliveryMetadata other = (MultiLearnerRoleDeliveryMetadata) o;
+      return this.compareTo(other) < 0;
    }
 
    @Override

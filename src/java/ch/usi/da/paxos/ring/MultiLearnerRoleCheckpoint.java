@@ -1,30 +1,29 @@
 package ch.usi.da.paxos.ring;
 
 import java.io.Serializable;
-import java.util.HashMap;
-import java.util.Map;
 
 import ch.usi.da.paxos.api.LearnerCheckpoint;
+import ch.usi.da.paxos.api.LearnerDeliveryMetadata;
 
 public class MultiLearnerRoleCheckpoint implements LearnerCheckpoint, Serializable {
    private static final long serialVersionUID = 8481644400096733652L;
 
-   long totalValuesDelivered;   
-   Map<Integer, LearnerRoleCheckpoint> ringCheckpoints = new HashMap<Integer, LearnerRoleCheckpoint>();
+   MultiLearnerRoleDeliveryMetadata multiLearnerRoleDeliveryMetadata;
+
+   public MultiLearnerRoleCheckpoint() {
+   }
+   
+   public MultiLearnerRoleCheckpoint(MultiLearnerRoleDeliveryMetadata mlrdm) {
+      this.multiLearnerRoleDeliveryMetadata = mlrdm;
+   }
    
    public long getTotalDeliveries() {
-      return totalValuesDelivered;
+      return multiLearnerRoleDeliveryMetadata.totalDeliveriesMade;
+   }
+
+   @Override
+   public LearnerDeliveryMetadata getLearnerDeliveryMetadata() {
+      return multiLearnerRoleDeliveryMetadata;
    }
    
-   public void setTotalDeliveries(long td) {
-      totalValuesDelivered = td;
-   }
-   
-   public LearnerRoleCheckpoint getLearnerCheckpoint(int ringId) {
-      return ringCheckpoints.get(ringId);
-   }
-   
-   public void setLearnerCheckpoint(int ringId, LearnerRoleCheckpoint cp) {
-      ringCheckpoints.put(ringId, cp);
-   }
 }

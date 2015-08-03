@@ -43,7 +43,5 @@ public interface Learner {
    public void provideLearnerCheckpoint(LearnerCheckpoint checkpoint);
    
 	public LearnerCheckpoint createCheckpointObject(LearnerDeliveryMetadata metadata);
-
-   public LearnerDeliveryMetadata getLastDeliveryMetadata();
    
 }

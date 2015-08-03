@@ -21,6 +21,12 @@ public class LearnerRoleDeliveryMetadata implements LearnerDeliveryMetadata, Ser
    }
    
    @Override
+   public boolean precedes(LearnerDeliveryMetadata o) {
+      LearnerRoleDeliveryMetadata other = (LearnerRoleDeliveryMetadata) o;
+      return this.compareTo(other) < 0;
+   }
+   
+   @Override
    public int compareTo(LearnerDeliveryMetadata o) {
       LearnerRoleDeliveryMetadata other = (LearnerRoleDeliveryMetadata) o;
       Long thisRingVals  = ringValueCount;

@@ -202,6 +202,7 @@ public class MultiLearnerRole extends Role implements Learner {
 	
 	@Override
 	public void setSafeDelivery(LearnerDeliveryMetadata metadata) {
+	   System.out.println("Setting delivery " + metadata + " as safe to discard.");
 	   MultiLearnerRoleDeliveryMetadata md = (MultiLearnerRoleDeliveryMetadata) metadata;
       for(int ringId : ringmap.keySet()){
          learner[ringId].setSafeDelivery(md.getDelivery(ringId));
@@ -225,7 +226,10 @@ public class MultiLearnerRole extends Role implements Learner {
          MultiLearnerRoleCheckpoint checkpoint = (MultiLearnerRoleCheckpoint) cp;
          multiring_delivered_values = checkpoint.getTotalDeliveries();
          for(int ringId : ringmap.keySet()) {
-            learner[ringId].provideLearnerCheckpoint(checkpoint.getLearnerCheckpoint(ringId));
+            MultiLearnerRoleDeliveryMetadata mlrdm = (MultiLearnerRoleDeliveryMetadata) checkpoint.getLearnerDeliveryMetadata();
+            LearnerRoleDeliveryMetadata lrdm = mlrdm.getDelivery(ringId);
+            LearnerRoleCheckpoint lrcp = new LearnerRoleCheckpoint(lrdm);
+            learner[ringId].provideLearnerCheckpoint(lrcp);
          }
       }
       
@@ -269,16 +273,11 @@ public class MultiLearnerRole extends Role implements Learner {
    @Override
    public LearnerCheckpoint createCheckpointObject(LearnerDeliveryMetadata metadata) {
       MultiLearnerRoleDeliveryMetadata md = (MultiLearnerRoleDeliveryMetadata) metadata;
-      
-      MultiLearnerRoleCheckpoint cp = new MultiLearnerRoleCheckpoint();
-      cp.setTotalDeliveries(md.getTotalDeliveries());
-      for(int ringId : ringmap.keySet())
-         cp.setLearnerCheckpoint(ringId, (LearnerRoleCheckpoint) learner[ringId].createCheckpointObject(md.getDelivery(ringId)));
+      MultiLearnerRoleCheckpoint cp = new MultiLearnerRoleCheckpoint(md);
       return cp;
    }
 
-   @Override
-   public LearnerDeliveryMetadata getLastDeliveryMetadata() {
+   private LearnerDeliveryMetadata getLastDeliveryMetadata() {
       MultiLearnerRoleDeliveryMetadata dm = new MultiLearnerRoleDeliveryMetadata();
       dm.setTotalDeliveries(multiring_delivered_values);
       for(int ringId : ringmap.keySet())
