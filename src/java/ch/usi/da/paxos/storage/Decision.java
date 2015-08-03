@@ -20,6 +20,7 @@ package ch.usi.da.paxos.storage;
 
 import java.io.Serializable;
 
+import ch.usi.da.paxos.api.LearnerDeliveryMetadata;
 import ch.usi.da.paxos.message.Value;
 
 /**
@@ -49,7 +50,9 @@ public class Decision implements Serializable {
 	
 	private long  valueCounterInInstance = -1; // starts at 1 in the instance
 	
-	/**
+	private LearnerDeliveryMetadata deliveryMetadata = null;
+	
+   /**
 	 * @param ring
 	 * @param instance
 	 * @param ballot
@@ -89,6 +92,14 @@ public class Decision implements Serializable {
 	public Value getValue() {
 		return value;
 	}
+	
+   public LearnerDeliveryMetadata getDeliveryMetadata() {
+      return deliveryMetadata;
+   }
+
+   public void setDeliveryMetadata(LearnerDeliveryMetadata deliveryMetadata) {
+      this.deliveryMetadata = deliveryMetadata;
+   }
 	
 	public void setInstanceValueCounter(long v) {
 	   this.valueCounterInInstance = v;

@@ -333,6 +333,10 @@ public class LearnerRole extends Role implements Learner {
          }
          
       }
+      
+      if (retval != Decision.SKIP)
+         retval.setDeliveryMetadata(getLastDeliveryMetadata());
+      
 	   return retval;
 	}
 	
@@ -393,7 +397,8 @@ public class LearnerRole extends Role implements Learner {
                      if (d.getInstance() > checkpointed_instanceId) {
                         String errString = String
                               .format(
-                                    "Checkpointed instance value count %d is not in checkpointed instance %d, but in instance %d!",
+                                    "Ring %d: Checkpointed instance value count %d is not in checkpointed instance %d, but in instance %d!",
+                                    ring.getRingID(),
                                     checkpointed_instance_value_count,
                                     checkpointed_instanceId, d.getInstance());
 //                        System.err.println(errString);

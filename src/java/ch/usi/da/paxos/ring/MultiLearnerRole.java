@@ -148,6 +148,7 @@ public class MultiLearnerRole extends Role implements Learner {
             continue;
          }
          else {
+            d.setDeliveryMetadata(getLastDeliveryMetadata());
             values.add(d);
          }
          
@@ -212,7 +213,7 @@ public class MultiLearnerRole extends Role implements Learner {
       
       System.out.println("Waiting for all single-ring LearnerRole objects to be ready to apply checkpoint...");
       waitForAllLearnersReady();
-      System.out.println("All single-ring LearnerRole ready. Applying checkpoint...");
+      System.out.println("All single-ring LearnerRole objects ready. Applying checkpoint...");
       
       // 1: install the checkpoint
       if (cp == null) {
