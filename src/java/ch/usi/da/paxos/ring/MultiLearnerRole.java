@@ -223,9 +223,11 @@ public class MultiLearnerRole extends Role implements Learner {
       }
       else {
          MultiLearnerRoleCheckpoint checkpoint = (MultiLearnerRoleCheckpoint) cp;
-         multiring_delivered_values = checkpoint.getTotalDeliveries();
+         MultiLearnerRoleDeliveryMetadata cpmetadata = checkpoint.getDeliveryMetadata();
+         multiring_delivered_values = cpmetadata.totalDeliveriesMade;
          for(int ringId : ringmap.keySet()) {
-            learner[ringId].provideLearnerCheckpoint(checkpoint.getLearnerCheckpoint(ringId));
+            LearnerCheckpoint ringlcp = new LearnerRoleCheckpoint(cpmetadata.getDelivery(ringId));
+            learner[ringId].provideLearnerCheckpoint(ringlcp);
          }
       }
       
@@ -268,12 +270,7 @@ public class MultiLearnerRole extends Role implements Learner {
 
    @Override
    public LearnerCheckpoint createCheckpointObject(LearnerDeliveryMetadata metadata) {
-      MultiLearnerRoleDeliveryMetadata md = (MultiLearnerRoleDeliveryMetadata) metadata;
-      
-      MultiLearnerRoleCheckpoint cp = new MultiLearnerRoleCheckpoint();
-      cp.setTotalDeliveries(md.getTotalDeliveries());
-      for(int ringId : ringmap.keySet())
-         cp.setLearnerCheckpoint(ringId, (LearnerRoleCheckpoint) learner[ringId].createCheckpointObject(md.getDelivery(ringId)));
+      MultiLearnerRoleCheckpoint cp = new MultiLearnerRoleCheckpoint((MultiLearnerRoleDeliveryMetadata) metadata);
       return cp;
    }
 
